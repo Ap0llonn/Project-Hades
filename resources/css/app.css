@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../**/*.vue';
+
+:root {
+    --pm-font-sans: 'Inter', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --pm-background: #f7f9fc;
+    --pm-surface: #f7f9fc;
+    --pm-surface-container-lowest: #ffffff;
+    --pm-surface-container-low: #f2f4f7;
+    --pm-surface-container: #eceef1;
+    --pm-surface-container-high: #e6e8eb;
+    --pm-surface-container-highest: #e0e3e6;
+    --pm-surface-variant: #e0e3e6;
+    --pm-secondary-container: #c8d7ff;
+    --pm-tertiary-fixed: #ffdbcc;
+    --pm-primary: #0058bc;
+    --pm-primary-container: #0070eb;
+    --pm-primary-fixed: #d8e2ff;
+    --pm-tertiary: #9e3d00;
+    --pm-error-container: #ffdad6;
+    --pm-outline-variant: #c1c6d7;
+    --pm-on-surface: #191c1e;
+    --pm-on-surface-variant: #414755;
+    --pm-on-primary: #ffffff;
+    --pm-on-secondary-container: #4e5d80;
+    --pm-inverse-surface: #2d3133;
+    --pm-inverse-on-surface: #eff1f4;
+    --pm-white: #ffffff;
+
+    --pm-radius-xl: 0.75rem;
+    --pm-radius-2xl: 1rem;
+    --pm-radius-3xl: 1.5rem;
+}
+
+@theme {
+    --font-sans: var(--pm-font-sans);
+
+    --color-background: var(--pm-background);
+    --color-surface: var(--pm-surface);
+    --color-surface-container-lowest: var(--pm-surface-container-lowest);
+    --color-surface-container-low: var(--pm-surface-container-low);
+    --color-surface-container: var(--pm-surface-container);
+    --color-surface-container-high: var(--pm-surface-container-high);
+    --color-surface-container-highest: var(--pm-surface-container-highest);
+    --color-surface-variant: var(--pm-surface-variant);
+    --color-secondary-container: var(--pm-secondary-container);
+    --color-tertiary-fixed: var(--pm-tertiary-fixed);
+    --color-primary: var(--pm-primary);
+    --color-primary-container: var(--pm-primary-container);
+    --color-primary-fixed: var(--pm-primary-fixed);
+    --color-tertiary: var(--pm-tertiary);
+    --color-error-container: var(--pm-error-container);
+    --color-outline-variant: var(--pm-outline-variant);
+    --color-on-surface: var(--pm-on-surface);
+    --color-on-surface-variant: var(--pm-on-surface-variant);
+    --color-on-primary: var(--pm-on-primary);
+    --color-on-secondary-container: var(--pm-on-secondary-container);
+    --color-inverse-surface: var(--pm-inverse-surface);
+    --color-inverse-on-surface: var(--pm-inverse-on-surface);
+    --color-white: var(--pm-white);
+
+    --radius-xl: var(--pm-radius-xl);
+    --radius-2xl: var(--pm-radius-2xl);
+    --radius-3xl: var(--pm-radius-3xl);
+}
+
+body {
+    background-color: var(--pm-background);
+    color: var(--pm-on-surface);
+}
