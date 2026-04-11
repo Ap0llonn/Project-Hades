@@ -8,5 +8,5 @@ require __DIR__.'/auth.php';
 
 Route::get('/', function () {
     return Inertia::render('home/pages/HomePage');
-});
+})->name('home');;
 
