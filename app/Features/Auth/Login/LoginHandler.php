@@ -2,14 +2,15 @@
 
 namespace App\Features\Auth\Login;
 
-use App\Shared\CQRS\Command;
-use App\Shared\CQRS\CommandHandler;
+use Ecotone\Modelling\Attribute\CommandHandler;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
-class LoginHandler implements CommandHandler
+final class LoginHandler
 {
 
-    public function handle(Command $command): mixed
+    public function handle(LoginCommand $command): array
     {
-        // TODO: Implement handle() method.
+
     }
 }
