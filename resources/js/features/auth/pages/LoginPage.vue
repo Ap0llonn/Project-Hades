@@ -1,10 +1,18 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { LogIn } from 'lucide-vue-next';
 import AuthSplitLayout from '../components/AuthSplitLayout.vue';
 import AuthTextField from '../components/AuthTextField.vue';
 
+const loginRequest = useForm({
+    email: '',
+    password: '',
+    _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+});
 
+function handleSubmit(){
+    loginRequest.post('/login');
+}
 </script>
 
 <template>
@@ -24,35 +32,28 @@ import AuthTextField from '../components/AuthTextField.vue';
             </div>
         </div>
 
-        <form class="space-y-5" @submit.prevent>
+        <form class="space-y-5" @submit.prevent="handleSubmit">
             <AuthTextField
+                v-model="loginRequest.email"
                 id="email"
                 label="Email"
                 name="email"
                 type="email"
                 placeholder="you@company.com"
                 autocomplete="email"
-                :required="true"
             />
             <AuthTextField
+                v-model="loginRequest.password"
                 id="password"
                 label="Password"
                 name="password"
                 type="password"
                 placeholder="Enter your password"
                 autocomplete="current-password"
-                :required="true"
             />
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <label class="inline-flex items-center gap-2 text-sm text-on-surface-variant">
-                    <input
-                        type="checkbox"
-                        name="remember"
-                        class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary/30"
-                    >
-                    <span>Remember me for 20 days</span>
-                </label>
+
                 <a href="#" class="shrink-0 text-sm font-semibold text-primary hover:text-primary-container">
                     Forgot password?
                 </a>
