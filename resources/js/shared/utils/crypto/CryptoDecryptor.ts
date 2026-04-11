@@ -1,9 +1,8 @@
 import {
-    AES_GCM,
     EncryptedPayload,
     bytesToUtf8,
-    deriveAesKey,
-    getCrypto,
+    deriveSecretboxKey,
+    getSodium,
     normalizeBytes,
 } from './cryptoCore';
 
@@ -13,23 +12,27 @@ export class CryptoDecryptor {
             throw new Error('Payload must include ciphertextBase64, ivBase64, and saltBase64.');
         }
 
-        const ivBytes = normalizeBytes(payload.ivBase64, 'iv');
+        const sodiumApi = await getSodium();
+        const nonceBytes = normalizeBytes(payload.ivBase64, 'iv');
         const cipherBytes = normalizeBytes(payload.ciphertextBase64, 'ciphertext');
-        const { key } = await deriveAesKey(password, payload.saltBase64, {
-            iterations: payload.iterations,
+
+        if (nonceBytes.length !== sodiumApi.crypto_secretbox_NONCEBYTES) {
+            throw new Error(`iv must be ${sodiumApi.crypto_secretbox_NONCEBYTES} bytes for libsodium crypto_secretbox.`);
+        }
+
+        const { keyBytes } = await deriveSecretboxKey(password, payload.saltBase64, {
             keyLengthBits: payload.keyLengthBits,
-            hash: payload.hash,
+            argonOpsLimit: payload.argonOpsLimit,
+            argonMemoryKb: payload.argonMemoryKb,
+            argonType: payload.argonType,
         });
-        const decrypted = await getCrypto().subtle.decrypt(
-            {
-                name: AES_GCM,
-                iv: ivBytes,
-            },
-            key,
+        const plaintextBytes = sodiumApi.crypto_secretbox_open_easy(
             cipherBytes,
+            nonceBytes,
+            keyBytes,
         );
 
-        return bytesToUtf8(new Uint8Array(decrypted));
+        return bytesToUtf8(plaintextBytes);
     }
 
     static async unwrapPrivateKey(wrapperPayload: EncryptedPayload, password: string): Promise<string> {

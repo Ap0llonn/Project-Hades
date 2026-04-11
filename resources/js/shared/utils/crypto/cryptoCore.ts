@@ -1,18 +1,21 @@
-export const DEFAULT_KDF_ITERATIONS = 210000;
+import * as sodium from 'libsodium-wrappers-sumo';
+
 export const DEFAULT_KEY_LENGTH_BITS = 256;
 export const DEFAULT_SALT_LENGTH = 16;
-export const DEFAULT_IV_LENGTH = 12;
-export const DEFAULT_HASH = 'SHA-256';
-export const PBKDF2 = 'PBKDF2';
-export const AES_GCM = 'AES-GCM';
+export const DEFAULT_IV_LENGTH = 24;
+export const DEFAULT_ARGON_OPS_LIMIT = 3;
+export const DEFAULT_ARGON_MEMORY_KIB = 65536;
+export const DEFAULT_ARGON_TYPE: ArgonTypeName = 'Argon2id13';
 
+export type ArgonTypeName = 'Argon2id13' | 'Argon2i13';
 export type CryptoBytes = Uint8Array<ArrayBuffer>;
 export type BinarySource = Uint8Array<ArrayBufferLike> | string;
 
 export interface KdfParams {
-    iterations?: number;
     keyLengthBits?: number;
-    hash?: string;
+    argonOpsLimit?: number;
+    argonMemoryKb?: number;
+    argonType?: ArgonTypeName;
 }
 
 export interface EncryptParams extends KdfParams {
@@ -26,30 +29,16 @@ export interface EncryptedPayload {
     ciphertextBase64: string;
     ivBase64: string;
     saltBase64: string;
-    iterations?: number;
-    hash?: string;
     keyLengthBits?: number;
+    kdfAlgorithm?: 'argon2id13' | 'argon2i13';
+    argonOpsLimit?: number;
+    argonMemoryKb?: number;
+    argonType?: ArgonTypeName;
 }
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-
-export function getCrypto(): Crypto {
-    const cryptoApi = globalThis?.crypto;
-
-    if (!cryptoApi?.subtle || typeof cryptoApi.getRandomValues !== 'function') {
-        throw new Error('Web Crypto API is not available in this environment.');
-    }
-
-    return cryptoApi;
-}
-
-export function randomBytes(length = DEFAULT_SALT_LENGTH): Uint8Array {
-    const bytes = new Uint8Array(length);
-    getCrypto().getRandomValues(bytes);
-
-    return bytes;
-}
+let sodiumReadyPromise: Promise<typeof sodium> | null = null;
 
 function asCryptoBytes(bytes: Uint8Array<ArrayBufferLike>): CryptoBytes {
     if (bytes.buffer instanceof ArrayBuffer) {
@@ -59,8 +48,18 @@ function asCryptoBytes(bytes: Uint8Array<ArrayBufferLike>): CryptoBytes {
     return new Uint8Array(bytes) as CryptoBytes;
 }
 
-export function randomCryptoBytes(length = DEFAULT_SALT_LENGTH): CryptoBytes {
-    return asCryptoBytes(randomBytes(length));
+export async function getSodium(): Promise<typeof sodium> {
+    if (!sodiumReadyPromise) {
+        sodiumReadyPromise = sodium.ready.then(() => sodium);
+    }
+
+    return sodiumReadyPromise;
+}
+
+export async function randomCryptoBytes(length = DEFAULT_SALT_LENGTH): Promise<CryptoBytes> {
+    const sodiumApi = await getSodium();
+
+    return asCryptoBytes(sodiumApi.randombytes_buf(length));
 }
 
 export function utf8ToBytes(value: string): CryptoBytes {
@@ -125,63 +124,87 @@ export function normalizeBytes(value: BinarySource, fieldName: string): CryptoBy
     throw new Error(`${fieldName} must be a base64 string or Uint8Array.`);
 }
 
-export async function createPasswordKey(password: string): Promise<CryptoKey> {
-    if (!password) {
-        throw new Error('Password is required for key derivation.');
-    }
-
-    return getCrypto().subtle.importKey(
-        'raw',
-        utf8ToBytes(password),
-        PBKDF2,
-        false,
-        ['deriveBits', 'deriveKey'],
-    );
-}
-
 export function getKdfParams(params: KdfParams = {}): Required<KdfParams> {
     return {
-        iterations: params.iterations ?? DEFAULT_KDF_ITERATIONS,
         keyLengthBits: params.keyLengthBits ?? DEFAULT_KEY_LENGTH_BITS,
-        hash: params.hash ?? DEFAULT_HASH,
+        argonOpsLimit: params.argonOpsLimit ?? DEFAULT_ARGON_OPS_LIMIT,
+        argonMemoryKb: params.argonMemoryKb ?? DEFAULT_ARGON_MEMORY_KIB,
+        argonType: params.argonType ?? DEFAULT_ARGON_TYPE,
     };
 }
 
-export async function deriveAesKey(
+function mapArgonAlgorithm(sodiumApi: typeof sodium, argonType: ArgonTypeName): number {
+    if (argonType === 'Argon2i13') {
+        return sodiumApi.crypto_pwhash_ALG_ARGON2I13;
+    }
+
+    return sodiumApi.crypto_pwhash_ALG_ARGON2ID13;
+}
+
+function ensureSecretboxKeyLength(sodiumApi: typeof sodium, keyLengthBits: number): void {
+    const requiredBits = sodiumApi.crypto_secretbox_KEYBYTES * 8;
+
+    if (keyLengthBits !== requiredBits) {
+        throw new Error(`keyLengthBits must be ${requiredBits} for libsodium crypto_secretbox.`);
+    }
+}
+
+export async function deriveArgon2Bytes(
     password: string,
     salt: BinarySource,
     params: KdfParams = {},
 ): Promise<{
-    key: CryptoKey;
+    keyBytes: CryptoBytes;
     saltBase64: string;
-    iterations: number;
-    hash: string;
     keyLengthBits: number;
+    argonOpsLimit: number;
+    argonMemoryKb: number;
+    argonType: ArgonTypeName;
 }> {
+    if (!password) {
+        throw new Error('Password is required for key derivation.');
+    }
+
+    const sodiumApi = await getSodium();
     const saltBytes = normalizeBytes(salt, 'salt');
-    const { iterations, keyLengthBits, hash } = getKdfParams(params);
-    const passwordKey = await createPasswordKey(password);
-    const key = await getCrypto().subtle.deriveKey(
-        {
-            name: PBKDF2,
-            salt: saltBytes,
-            iterations,
-            hash,
-        },
-        passwordKey,
-        {
-            name: AES_GCM,
-            length: keyLengthBits,
-        },
-        false,
-        ['encrypt', 'decrypt'],
+    const { keyLengthBits, argonOpsLimit, argonMemoryKb, argonType } = getKdfParams(params);
+    const keyBytes = asCryptoBytes(
+        sodiumApi.crypto_pwhash(
+            keyLengthBits / 8,
+            password,
+            saltBytes,
+            argonOpsLimit,
+            argonMemoryKb * 1024,
+            mapArgonAlgorithm(sodiumApi, argonType),
+        ),
     );
 
     return {
-        key,
+        keyBytes,
         saltBase64: toBase64(saltBytes),
-        iterations,
-        hash,
         keyLengthBits,
+        argonOpsLimit,
+        argonMemoryKb,
+        argonType,
     };
+}
+
+export async function deriveSecretboxKey(
+    password: string,
+    salt: BinarySource,
+    params: KdfParams = {},
+): Promise<{
+    keyBytes: CryptoBytes;
+    saltBase64: string;
+    keyLengthBits: number;
+    argonOpsLimit: number;
+    argonMemoryKb: number;
+    argonType: ArgonTypeName;
+}> {
+    const sodiumApi = await getSodium();
+    const derived = await deriveArgon2Bytes(password, salt, params);
+
+    ensureSecretboxKeyLength(sodiumApi, derived.keyLengthBits);
+
+    return derived;
 }
