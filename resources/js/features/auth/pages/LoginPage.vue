@@ -3,6 +3,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import { LogIn } from 'lucide-vue-next';
 import AuthSplitLayout from '../components/AuthSplitLayout.vue';
 import AuthTextField from '../components/AuthTextField.vue';
+
+
 </script>
 
 <template>
