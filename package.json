@@ -20,6 +20,7 @@
         "libsodium-wrappers-sumo": "^0.8.3",
         "lucide-vue-next": "^1.0.0",
         "vue": "^3.5.32",
-        "ziggy-js": "^2.6.2"
+        "ziggy-js": "^2.6.2",
+        "zxcvbn": "^4.4.2"
     }
 }
