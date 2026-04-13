@@ -2,6 +2,7 @@
 
 namespace App\Features\Auth\Register;
 
+use App\Rules\StrongPasswordEntropy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -17,7 +18,7 @@ class RegisterUserRequest extends FormRequest
             'password' => [
                 'required',
                 'string',
-                Password::min(12)->mixedCase()->numbers()->symbols(),
+                Password::min(12)->uncompromised()
             ],
             'confirm_password' => ['required', 'same:password'],
 

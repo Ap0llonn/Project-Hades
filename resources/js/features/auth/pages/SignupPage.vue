@@ -1,21 +1,13 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { CryptoGenerator } from '@/shared/utils';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { route } from 'ziggy-js';
 import { UserPlus } from 'lucide-vue-next';
+import { CryptoGenerator } from '@/shared/utils';
+import CryptoEncryptor from '@/shared/utils/crypto/CryptoEncryptor';
 import AuthSplitLayout from '../components/AuthSplitLayout.vue';
 import AuthTextField from '../components/AuthTextField.vue';
-import CryptoEncryptor from '@/shared/utils/crypto/CryptoEncryptor';
-import {
-    MIN_ZXCVBN_SCORE,
-    getPasswordChecks,
-    getPasswordEntropy,
-    getPasswordFeedback,
-    getPasswordMeterClass,
-    getPasswordStrengthLabel,
-    getPasswordValidationMessage as resolvePasswordValidationMessage,
-} from '../utils/passwordValidation';
+import PasswordEntropyVerification from '../components/PasswordEntropyVerification.vue';
 
 const signupRequest = useForm({
     email: '',
@@ -23,48 +15,27 @@ const signupRequest = useForm({
     confirm_password: '',
     firstName: '',
     lastName: '',
-
     encrypted_master_key: null,
     kdf_salt: '',
     kdf_params: null,
 });
 
 const cryptoError = ref('');
-const passwordChecks = computed(() => getPasswordChecks(signupRequest.password));
-
-const passwordEntropy = computed(() => {
-    return getPasswordEntropy(signupRequest.password, [
-        signupRequest.email,
-        signupRequest.firstName,
-        signupRequest.lastName,
-    ]);
+const passwordValidation = ref({
+    message: '',
+    score: 0,
+    isEntropyMet: false,
 });
 
-const passwordScore = computed(() => passwordEntropy.value?.score ?? 0);
-
-const passwordStrengthLabel = computed(() => getPasswordStrengthLabel(passwordScore.value));
-const passwordFeedback = computed(() => getPasswordFeedback(passwordEntropy.value));
-
-const passwordMeterWidth = computed(() => `${passwordScore.value * 25}%`);
-const passwordMeterClass = computed(() => getPasswordMeterClass(passwordScore.value));
-
-const isPasswordEntropyMet = computed(() => (
-    passwordEntropy.value !== null && passwordEntropy.value.score >= MIN_ZXCVBN_SCORE
-));
-
-function getPasswordValidationMessage() {
-    return resolvePasswordValidationMessage(
-        signupRequest.password,
-        passwordChecks.value,
-        passwordEntropy.value?.score ?? null,
-    );
+function handlePasswordValidationChange(nextValidationState) {
+    passwordValidation.value = nextValidationState;
 }
 
 async function handleSubmit() {
     cryptoError.value = '';
     signupRequest.clearErrors();
 
-    const passwordValidationMessage = getPasswordValidationMessage();
+    const passwordValidationMessage = passwordValidation.value.message;
     if (passwordValidationMessage) {
         signupRequest.setError('password', passwordValidationMessage);
         return;
@@ -86,9 +57,7 @@ async function handleSubmit() {
             ciphertext: wrappedMK.ciphertextBase64,
             iv: wrappedMK.ivBase64,
         };
-
         signupRequest.kdf_salt = wrappedMK.saltBase64;
-
         signupRequest.kdf_params = {
             algorithm: wrappedMK.kdfAlgorithm,
             opsLimit: wrappedMK.argonOpsLimit,
@@ -130,10 +99,7 @@ async function handleSubmit() {
                 autocomplete="given-name"
                 :required="true"
             />
-            <p
-                v-if="signupRequest.errors.firstName"
-                class="sm:col-span-1 -mt-3 text-xs text-red-600"
-            >
+            <p v-if="signupRequest.errors.firstName" class="sm:col-span-1 -mt-3 text-xs text-red-600">
                 {{ signupRequest.errors.firstName }}
             </p>
             <AuthTextField
@@ -145,10 +111,7 @@ async function handleSubmit() {
                 autocomplete="family-name"
                 :required="true"
             />
-            <p
-                v-if="signupRequest.errors.lastName"
-                class="sm:col-span-1 -mt-3 text-xs text-red-600"
-            >
+            <p v-if="signupRequest.errors.lastName" class="sm:col-span-1 -mt-3 text-xs text-red-600">
                 {{ signupRequest.errors.lastName }}
             </p>
             <div class="sm:col-span-2">
@@ -162,10 +125,7 @@ async function handleSubmit() {
                     autocomplete="email"
                     :required="true"
                 />
-                <p
-                    v-if="signupRequest.errors.email"
-                    class="mt-2 text-xs text-red-600"
-                >
+                <p v-if="signupRequest.errors.email" class="mt-2 text-xs text-red-600">
                     {{ signupRequest.errors.email }}
                 </p>
             </div>
@@ -181,51 +141,16 @@ async function handleSubmit() {
                     :required="true"
                     helper="At least 12 chars, mixed case, number, symbol, and strong entropy."
                 />
-                <p
-                    v-if="signupRequest.errors.password"
-                    class="mt-2 text-xs text-red-600"
-                >
+                <p v-if="signupRequest.errors.password" class="mt-2 text-xs text-red-600">
                     {{ signupRequest.errors.password }}
                 </p>
-                <div
-                    v-if="signupRequest.password"
-                    class="mt-3 space-y-2 rounded-xl border border-outline-variant/70 bg-surface-container-lowest p-3"
-                >
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-on-surface-variant">Entropy (zxcvbn)</span>
-                        <span class="font-semibold text-on-surface">
-                            {{ passwordStrengthLabel }}
-                        </span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden rounded-full bg-outline-variant/40">
-                        <div
-                            class="h-full rounded-full transition-all"
-                            :class="passwordMeterClass"
-                            :style="{ width: passwordMeterWidth }"
-                        />
-                    </div>
-                    <p v-if="passwordFeedback" class="text-xs text-on-surface-variant">
-                        {{ passwordFeedback }}
-                    </p>
-                    <ul class="grid gap-1 text-xs">
-                        <li
-                            v-for="check in passwordChecks"
-                            :key="check.key"
-                            class="flex items-center gap-2"
-                            :class="check.met ? 'text-green-700' : 'text-on-surface-variant'"
-                        >
-                            <span class="w-3 text-center">{{ check.met ? '✓' : '•' }}</span>
-                            <span>{{ check.label }}</span>
-                        </li>
-                        <li
-                            class="flex items-center gap-2"
-                            :class="isPasswordEntropyMet ? 'text-green-700' : 'text-on-surface-variant'"
-                        >
-                            <span class="w-3 text-center">{{ isPasswordEntropyMet ? '✓' : '•' }}</span>
-                            <span>Entropy score is Strong or better</span>
-                        </li>
-                    </ul>
-                </div>
+                <PasswordEntropyVerification
+                    :password="signupRequest.password"
+                    :email="signupRequest.email"
+                    :first-name="signupRequest.firstName"
+                    :last-name="signupRequest.lastName"
+                    @validation-change="handlePasswordValidationChange"
+                />
             </div>
             <div class="sm:col-span-2">
                 <AuthTextField
@@ -237,10 +162,7 @@ async function handleSubmit() {
                     placeholder="confirm your password"
                     :required="true"
                 />
-                <p
-                    v-if="signupRequest.errors.confirm_password"
-                    class="mt-2 text-xs text-red-600"
-                >
+                <p v-if="signupRequest.errors.confirm_password" class="mt-2 text-xs text-red-600">
                     {{ signupRequest.errors.confirm_password }}
                 </p>
             </div>
