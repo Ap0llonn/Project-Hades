@@ -1,4 +1,4 @@
-import * as sodium from 'libsodium-wrappers-sumo';
+import sodium from 'libsodium-wrappers-sumo';
 
 export const DEFAULT_KEY_LENGTH_BITS = 256;
 export const DEFAULT_SALT_LENGTH = 16;

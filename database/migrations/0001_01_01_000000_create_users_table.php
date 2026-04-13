@@ -12,13 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->UUID();
+            $table->uuid('id')->primary();
+            $table->string('email')->unique();
+            $table->string('email_hashed')->unique();
             $table->string('first_name');
             $table->string('last_name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('master_key');
-            $table->string('salt');
+            $table->json('master_key_wrapper');
+            $table->string('kdf_salt');
+            $table->json('kdf_params');
+
             $table->timestamps();
         });
 
@@ -36,6 +38,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
     }
 };

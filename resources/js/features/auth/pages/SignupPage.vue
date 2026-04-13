@@ -1,8 +1,57 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { CryptoGenerator } from '@/shared/utils';
+import { ref } from 'vue';
+import { route } from 'ziggy-js';
 import { UserPlus } from 'lucide-vue-next';
 import AuthSplitLayout from '../components/AuthSplitLayout.vue';
 import AuthTextField from '../components/AuthTextField.vue';
+import CryptoEncryptor from '@/shared/utils/crypto/CryptoEncryptor';
+
+const signupRequest = useForm({
+    email: '',
+    password: '',
+    confirm_password: '',
+    firstName: '',
+    lastName: '',
+
+    encrypted_master_key: null,
+    kdf_salt: '',
+    kdf_params: null,
+});
+
+const cryptoError = ref('');
+
+async function handleSubmit() {
+    cryptoError.value = '';
+    signupRequest.clearErrors();
+
+    try {
+        const masterKey = await CryptoGenerator.generateMasterKey();
+        const wrappedMK = await CryptoEncryptor.wrapMasterKeyWithPassword(
+            masterKey,
+            signupRequest.password,
+        );
+
+        signupRequest.encrypted_master_key = {
+            ciphertext: wrappedMK.ciphertextBase64,
+            iv: wrappedMK.ivBase64,
+        };
+
+        signupRequest.kdf_salt = wrappedMK.saltBase64;
+
+        signupRequest.kdf_params = {
+            algorithm: wrappedMK.kdfAlgorithm,
+            opsLimit: wrappedMK.argonOpsLimit,
+            memoryKb: wrappedMK.argonMemoryKb,
+            type: wrappedMK.argonType,
+        };
+
+        signupRequest.post(route('signup.perform'));
+    } catch (_error) {
+        cryptoError.value = 'Unable to secure your account keys. Please try again.';
+    }
+}
 </script>
 
 <template>
@@ -22,25 +71,40 @@ import AuthTextField from '../components/AuthTextField.vue';
             </div>
         </div>
 
-        <form class="grid gap-5 sm:grid-cols-2" @submit.prevent>
+        <form class="grid gap-5 sm:grid-cols-2" @submit.prevent="handleSubmit">
             <AuthTextField
+                v-model="signupRequest.firstName"
                 id="first_name"
                 label="First name"
-                name="first_name"
+                name="firstName"
                 placeholder="Sam"
                 autocomplete="given-name"
                 :required="true"
             />
+            <p
+                v-if="signupRequest.errors.firstName"
+                class="sm:col-span-1 -mt-3 text-xs text-red-600"
+            >
+                {{ signupRequest.errors.firstName }}
+            </p>
             <AuthTextField
+                v-model="signupRequest.lastName"
                 id="last_name"
                 label="Last name"
-                name="last_name"
+                name="lastName"
                 placeholder="Tremblay"
                 autocomplete="family-name"
                 :required="true"
             />
+            <p
+                v-if="signupRequest.errors.lastName"
+                class="sm:col-span-1 -mt-3 text-xs text-red-600"
+            >
+                {{ signupRequest.errors.lastName }}
+            </p>
             <div class="sm:col-span-2">
                 <AuthTextField
+                    v-model="signupRequest.email"
                     id="email"
                     label="Email"
                     name="email"
@@ -49,19 +113,16 @@ import AuthTextField from '../components/AuthTextField.vue';
                     autocomplete="email"
                     :required="true"
                 />
+                <p
+                    v-if="signupRequest.errors.email"
+                    class="mt-2 text-xs text-red-600"
+                >
+                    {{ signupRequest.errors.email }}
+                </p>
             </div>
             <div class="sm:col-span-2">
                 <AuthTextField
-                    id="phone"
-                    label="Phone (optional)"
-                    name="phone"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
-                    autocomplete="tel"
-                />
-            </div>
-            <div class="sm:col-span-2">
-                <AuthTextField
+                    v-model="signupRequest.password"
                     id="password"
                     label="Password"
                     name="password"
@@ -71,36 +132,56 @@ import AuthTextField from '../components/AuthTextField.vue';
                     :required="true"
                     helper="Use at least 12 characters with uppercase, lowercase, number, and symbol."
                 />
+                <p
+                    v-if="signupRequest.errors.password"
+                    class="mt-2 text-xs text-red-600"
+                >
+                    {{ signupRequest.errors.password }}
+                </p>
             </div>
             <div class="sm:col-span-2">
                 <AuthTextField
-                    id="password_confirmation"
-                    label="Confirm password"
-                    name="password_confirmation"
+                    v-model="signupRequest.confirm_password"
+                    id="confirm-password"
+                    label="Password confirmation"
+                    name="confirm_password"
                     type="password"
-                    placeholder="Repeat your password"
-                    autocomplete="new-password"
+                    placeholder="confirm your password"
                     :required="true"
                 />
-            </div>
-
-            <label class="sm:col-span-2 inline-flex items-start gap-2 rounded-xl bg-surface-container-lowest p-3 text-sm text-on-surface-variant">
-                <input
-                    type="checkbox"
-                    name="terms"
-                    required
-                    class="mt-0.5 h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary/30"
+                <p
+                    v-if="signupRequest.errors.confirm_password"
+                    class="mt-2 text-xs text-red-600"
                 >
-                <span>
-                    I agree to the Terms of Service and Privacy Policy.
-                </span>
-            </label>
+                    {{ signupRequest.errors.confirm_password }}
+                </p>
+            </div>
+            <div class="sm:col-span-2">
+                <p
+                    v-if="cryptoError || signupRequest.errors.encrypted_master_key || signupRequest.errors['encrypted_master_key.ciphertext'] || signupRequest.errors['encrypted_master_key.iv'] || signupRequest.errors.kdf_salt || signupRequest.errors.kdf_params || signupRequest.errors['kdf_params.algorithm'] || signupRequest.errors['kdf_params.opsLimit'] || signupRequest.errors['kdf_params.memoryKb'] || signupRequest.errors['kdf_params.type']"
+                    class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                    {{
+                        cryptoError ||
+                        signupRequest.errors.encrypted_master_key ||
+                        signupRequest.errors['encrypted_master_key.ciphertext'] ||
+                        signupRequest.errors['encrypted_master_key.iv'] ||
+                        signupRequest.errors.kdf_salt ||
+                        signupRequest.errors.kdf_params ||
+                        signupRequest.errors['kdf_params.algorithm'] ||
+                        signupRequest.errors['kdf_params.opsLimit'] ||
+                        signupRequest.errors['kdf_params.memoryKb'] ||
+                        signupRequest.errors['kdf_params.type']
+                    }}
+                </p>
+            </div>
 
             <button
                 type="submit"
-                class="sm:col-span-2 mt-1 w-full rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-95"
+                :disabled="signupRequest.processing"
+                class="sm:col-span-2 mt-1 w-full rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
             >
-                Create Account
+                {{ signupRequest.processing ? 'Creating Account...' : 'Create Account' }}
             </button>
         </form>
 

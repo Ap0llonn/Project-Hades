@@ -4,7 +4,7 @@ namespace App\Features\Auth\Register;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class SignupRequest extends FormRequest
+class RegisterUserRequest extends FormRequest
 {
     /**
      * @return array<string, mixed>

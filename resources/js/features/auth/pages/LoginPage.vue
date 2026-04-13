@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { LogIn } from 'lucide-vue-next';
+import {Head, Link, useForm} from '@inertiajs/vue3';
+import {LogIn} from 'lucide-vue-next';
 import AuthSplitLayout from '../components/AuthSplitLayout.vue';
 import AuthTextField from '../components/AuthTextField.vue';
 
@@ -12,13 +12,13 @@ const loginRequest = useForm({
 
 //faire
 
-function handleSubmit(){
+function handleSubmit() {
     loginRequest.post('/login');
 }
 </script>
 
 <template>
-    <Head title="Login | The Vault" />
+    <Head title="Login | The Vault"/>
 
     <AuthSplitLayout
         title="Welcome back"
@@ -26,7 +26,7 @@ function handleSubmit(){
     >
         <div class="mb-8 flex items-center gap-3">
             <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary">
-                <LogIn class="h-5 w-5" />
+                <LogIn class="h-5 w-5"/>
             </span>
             <div>
                 <h2 class="text-2xl font-bold text-on-surface">Login</h2>
@@ -54,6 +54,16 @@ function handleSubmit(){
                 autocomplete="current-password"
             />
 
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p
+                    v-if="loginRequest.errors.email || loginRequest.errors.password"
+                    class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                    {{
+                        loginRequest.errors.email || loginRequest.errors.password
+                    }}
+                </p>
+            </div>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
                 <a href="#" class="shrink-0 text-sm font-semibold text-primary hover:text-primary-container">

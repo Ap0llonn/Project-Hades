@@ -20,12 +20,18 @@ class User extends Authenticatable
     protected $keyType = 'string';
 
     protected $fillable = [
+        'email',
+        'email_hashed',
         'first_name',
         'last_name',
-        'email',
-        'password',
-        'master_key',
-        'salt'
+        'master_key_wrapper',
+        'kdf_salt',
+        'kdf_params'
+
     ];
 
+    protected $casts = [
+        'kdf_params' => 'array',
+        'master_key_wrapper' => 'array',
+    ];
 }

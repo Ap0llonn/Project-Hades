@@ -1,6 +1,7 @@
 <?php
 
 use App\Features\Auth\Login\LoginController;
+use App\Features\Auth\Register\RegisterUserController;
 use Inertia\Inertia;
 
 Route::get('/login', function () {
@@ -12,3 +13,5 @@ Route::post('/login', LoginController::class)->name('login.perform');
 Route::get('/signup', function () {
     return Inertia::render('auth/pages/SignupPage');
 })->name('signup');
+
+Route::post('/signup', RegisterUserController::class)->name('signup.perform');
