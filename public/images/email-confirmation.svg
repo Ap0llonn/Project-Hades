@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Email confirmation illustration</title>
+  <desc id="desc">An envelope with a shield and checkmark representing account confirmation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="640" height="360" rx="24" fill="url(#bg)"/>
+  <circle cx="78" cy="78" r="12" fill="#93c5fd"/>
+  <circle cx="560" cy="72" r="18" fill="#bfdbfe"/>
+  <circle cx="520" cy="300" r="14" fill="#93c5fd"/>
+  <rect x="132" y="88" width="376" height="216" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+  <path d="M132 122L320 236L508 122" fill="none" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M132 278L248 188" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round"/>
+  <path d="M508 278L392 188" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round"/>
+  <rect x="262" y="118" width="116" height="116" rx="20" fill="url(#card)"/>
+  <path d="M292 176L313 197L348 162" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M320 118V96" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+</svg>

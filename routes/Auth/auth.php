@@ -1,6 +1,7 @@
 <?php
 
 use App\Features\Auth\Login\LoginController;
+use App\Features\Auth\EmailValidation\EmailVerificationController;
 use App\Features\Auth\Register\RegisterUserController;
 use Inertia\Inertia;
 
@@ -15,3 +16,5 @@ Route::get('/signup', function () {
 })->name('signup');
 
 Route::post('/signup', RegisterUserController::class)->name('signup.perform');
+
+require __DIR__ . '/email.php';

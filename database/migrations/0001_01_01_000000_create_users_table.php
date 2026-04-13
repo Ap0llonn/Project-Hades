@@ -20,7 +20,7 @@ return new class extends Migration
             $table->json('master_key_wrapper');
             $table->string('kdf_salt');
             $table->json('kdf_params');
-
+            $table->boolean('email_verified')->default(false);
             $table->timestamps();
         });
 

@@ -5,7 +5,6 @@ namespace App\Features\Auth\Register;
 use App\Models\User;
 use Ecotone\Modelling\Attribute\CommandHandler;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -14,7 +13,7 @@ final class RegisterUserHandler
 
 
     #[CommandHandler]
-    public function handle(RegisterUserCommand $command): array
+    public function handle(RegisterUserCommand $command): void
     {
         $email = Str::lower(trim($command->email));
 
@@ -37,8 +36,5 @@ final class RegisterUserHandler
             }
             throw $exception;
         }
-
-        Log::info("Registered user with email {$email}");
-        return [];
     }
 }
