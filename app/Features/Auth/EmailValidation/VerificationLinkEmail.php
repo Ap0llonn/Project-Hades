@@ -4,7 +4,6 @@ namespace App\Features\Auth\EmailValidation;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -14,9 +13,7 @@ final class VerificationLinkEmail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public string $firstName,
-        public string $verificationUrl,
-        public string $illustrationUrl,
+        public string $verificationUrl
     ) {
     }
 
@@ -32,9 +29,7 @@ final class VerificationLinkEmail extends Mailable
         return new Content(
             markdown: 'emails.confirmation',
             with: [
-                'firstName' => $this->firstName,
                 'confirmationUrl' => $this->verificationUrl,
-                'confirmationImageUrl' => $this->illustrationUrl,
             ],
         );
     }

@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Features\Auth\Register;
+namespace App\Features\Auth\Register\FinishProcess;
 
-use App\Rules\StrongPasswordEntropy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -14,17 +13,13 @@ class RegisterUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'id' => 'string',
             'password' => [
                 'required',
                 'string',
-                Password::min(12)->uncompromised()
+                Password::min(12)->uncompromised(),
             ],
             'confirm_password' => ['required', 'same:password'],
-
-            'firstName' => ['required', 'string'],
-            'lastName' => ['required', 'string'],
-
             'encrypted_master_key' => ['required', 'array'],
             'encrypted_master_key.ciphertext' => ['required', 'string'],
             'encrypted_master_key.iv' => ['required', 'string'],

@@ -1,19 +1,15 @@
 <x-mail::message>
 # Confirm Your Email
 
-Hi {{ $firstName }},
+Hi,
 
-Thanks for creating your OneVault account. Confirm your email address to activate your account.
-
-<p align="center">
-    <img src="{{ $confirmationImageUrl }}" alt="Email confirmation illustration" width="420">
-</p>
+Thanks for starting your VaultGuardian account. Confirm your email address to continue your account setup.
 
 <x-mail::button :url="$confirmationUrl">
-Confirm My Account
+Verify My Email
 </x-mail::button>
 
-If you did not create this account, you can ignore this email.
+After verification, you will finish setup by creating your master password.
 
 Thanks,<br>
 {{ config('app.name') }}

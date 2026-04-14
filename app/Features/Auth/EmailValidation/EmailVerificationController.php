@@ -2,9 +2,11 @@
 
 namespace App\Features\Auth\EmailValidation;
 
+use App\Models\PendingUser;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -13,40 +15,69 @@ class EmailVerificationController
     public function confirmation(Request $request): Response|RedirectResponse
     {
         if (! $request->session()->pull('email_confirmation_sent', false)) {
-            return redirect()->route('signup');
+            return redirect()->route('start-account');
         }
 
-        return Inertia::render('auth/pages/EmailConfirmationPage');
+        return Inertia::render('auth/pages/EmailConfirmationPage', [
+            'email' => (string) $request->session()->get('email_confirmation_email', ''),
+        ]);
     }
 
-    public function verify(Request $request): RedirectResponse
+    public function verify(Request $request): Response|RedirectResponse
     {
         if (! $request->hasValidSignature()) {
-            abort(403, 'Invalid or expired link');
+            return $this->errorResponse('Invalid signature', 'Invalid or expired link.');
         }
 
-        $user = User::findOrFail($request->id);
-
-        if (! hash_equals(sha1($user->email), $request->hash)) {
-            abort(403, 'Invalid verification link');
+        $pendingUser = PendingUser::find($request->id);
+        if (! $pendingUser) {
+            return $this->errorResponse('Verification not found', 'The verification request could not be found.');
         }
 
-        if (! $user->email_verified) {
-            $user->email_verified = true;
-            $user->save();
+        if (! filter_var($pendingUser->email, FILTER_VALIDATE_EMAIL)) {
+            return $this->errorResponse('Invalid verification link', 'Invalid verification link.');
         }
 
-        $request->session()->put('email_verification_success', true);
+        if (now()->gt($pendingUser->expires_at)) {
+            return $this->errorResponse('Expired link', 'This verification link has expired.');
+        }
 
-        return redirect()->route('verification.success');
+        if ($pendingUser->used_at !== null) {
+            return $this->errorResponse('Link already used', 'This verification link was already used.');
+        }
+
+        if (User::query()->where('email', $pendingUser->email)->exists()) {
+            return redirect()->route('login');
+        }
+
+        $pendingUser->update([
+            'used_at' => now(),
+        ]);
+
+        $setupUrl = URL::temporarySignedRoute(
+            'finish-account',
+            now()->addMinutes(10),
+            ['id' => $pendingUser->id],
+        );
+
+        return redirect($setupUrl);
     }
 
-    public function success(Request $request): Response|RedirectResponse
+    public function success(Request $request): RedirectResponse
     {
-        if (! $request->session()->pull('email_verification_success', false)) {
-            return redirect()->back();
+        if ($request->session()->pull('email_verification_success', false)) {
+            return redirect()->route('finish-account');
         }
 
-        return Inertia::render('auth/pages/EmailVerifiedPage');
+        return redirect()->route('start-account');
+    }
+
+    public function errorResponse($title, $messages): Response
+    {
+        return Inertia::render('shared/pages/ErrorPage', [
+            'errorCode' => 403,
+            'title' => $title,
+            'message' => $messages,
+        ]);
     }
 }

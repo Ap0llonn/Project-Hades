@@ -1,7 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { Fingerprint, LockKeyhole, ShieldCheck } from 'lucide-vue-next';
-import DefaultLayout from '../../../shared/layouts/DefaultLayout.vue';
+import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
 
 defineProps({
     title: {
@@ -22,7 +22,7 @@ const trustPoints = [
 </script>
 
 <template>
-    <DefaultLayout>
+    <AuthLayout>
         <div class="relative overflow-hidden bg-background px-6 py-12 text-on-surface">
             <div class="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-[100px]" />
             <div class="absolute -bottom-16 -right-16 h-64 w-64 rounded-full bg-secondary-container/40 blur-[100px]" />
@@ -61,5 +61,5 @@ const trustPoints = [
                 </section>
             </div>
         </div>
-    </DefaultLayout>
+    </AuthLayout>
 </template>

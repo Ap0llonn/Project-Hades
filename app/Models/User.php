@@ -26,7 +26,8 @@ class User extends Authenticatable
         'last_name',
         'master_key_wrapper',
         'kdf_salt',
-        'kdf_params'
+        'kdf_params',
+        'email_verified',
 
     ];
 

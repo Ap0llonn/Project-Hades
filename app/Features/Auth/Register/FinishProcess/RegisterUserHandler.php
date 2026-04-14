@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Features\Auth\Register;
+namespace App\Features\Auth\Register\FinishProcess;
 
 use App\Models\User;
 use Ecotone\Modelling\Attribute\CommandHandler;
@@ -22,17 +22,19 @@ final class RegisterUserHandler
             User::create([
                 'email' => $email,
                 'email_hashed' => hash_hmac('sha256', $email, (string) config('app.key')),
-                'first_name' => $command->firstName,
-                'last_name' => $command->lastName,
+                'first_name' => null,
+                'last_name' => null,
                 'master_key_wrapper' => $command->master_key_wrapper,
                 'kdf_salt' => $command->kdf_salt,
                 'kdf_params' => $command->kdf_params,
+                'email_verified' => true,
             ]);
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23000') {
                 throw ValidationException::withMessages([
                     'email' => __('validation.unique', ['attribute' => 'email']),
                 ]);
+
             }
             throw $exception;
         }
