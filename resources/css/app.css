@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -38,6 +39,32 @@
     --pm-radius-xl: 0.75rem;
     --pm-radius-2xl: 1rem;
     --pm-radius-3xl: 1.5rem;
+}
+
+.dark {
+    --pm-background: #020617;
+    --pm-surface: #0f172a;
+    --pm-surface-container-lowest: #0b1220;
+    --pm-surface-container-low: #111827;
+    --pm-surface-container: #1f2937;
+    --pm-surface-container-high: #334155;
+    --pm-surface-container-highest: #475569;
+    --pm-surface-variant: #334155;
+    --pm-secondary-container: #1e293b;
+    --pm-tertiary-fixed: #1e293b;
+    --pm-primary: #60a5fa;
+    --pm-primary-container: #3b82f6;
+    --pm-primary-fixed: #1d4ed8;
+    --pm-tertiary: #93c5fd;
+    --pm-error-container: #7f1d1d;
+    --pm-outline-variant: #334155;
+    --pm-on-surface: #e2e8f0;
+    --pm-on-surface-variant: #94a3b8;
+    --pm-on-primary: #0b1220;
+    --pm-on-secondary-container: #bfdbfe;
+    --pm-inverse-surface: #f8fafc;
+    --pm-inverse-on-surface: #0f172a;
+    --pm-white: #ffffff;
 }
 
 @theme {
@@ -84,4 +111,49 @@ input,
 textarea,
 select {
     font-family: inherit;
+}
+
+.dark .bg-white {
+    background-color: #0f172a;
+}
+
+.dark .text-gray-900 {
+    color: #e2e8f0;
+}
+
+.dark .text-gray-700 {
+    color: #cbd5e1;
+}
+
+.dark .text-gray-600 {
+    color: #94a3b8;
+}
+
+.dark .text-gray-500 {
+    color: #64748b;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+    border-color: #334155;
+}
+
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+    transition:
+        background-color 1000ms ease,
+        color 260ms ease,
+        border-color 260ms ease,
+        fill 260ms ease,
+        stroke 260ms ease,
+        box-shadow 260ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .theme-transition *,
+    .theme-transition *::before,
+    .theme-transition *::after {
+        transition: none !important;
+    }
 }
