@@ -90,8 +90,8 @@ const features = [
             <div class="fixed bottom-0 right-1/4 h-96 w-96 rounded-full bg-blue-400 opacity-10 blur-[120px]" />
 
             <div class="relative z-10">
-                <section class="mx-auto w-full max-w-7xl px-6 py-20 text-center">
-                <h1 class="mb-6 text-5xl tracking-tight text-gray-900 sm:text-6xl md:text-8xl">
+                <section class="mx-auto w-full max-w-7xl px-6 py-20 text-center" data-aos="fade-up">
+                <h1 class="mb-6 text-5xl tracking-tight text-gray-900 sm:text-6xl md:text-8xl" data-aos="fade-up" data-aos-delay="80">
                     Your digital life,
                     <br />
                     <span class="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text font-bold text-transparent">
@@ -99,12 +99,12 @@ const features = [
                     </span>
                 </h1>
 
-                <p class="mx-auto mb-12 max-w-2xl text-lg text-gray-600">
+                <p class="mx-auto mb-12 max-w-2xl text-lg text-gray-600" data-aos="fade-up" data-aos-delay="140">
                     A password manager that combines military-grade encryption with refined design. Store, generate, and
                     autofill passwords across all your devices with confidence.
                 </p>
 
-                <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <div class="flex flex-col items-center justify-center gap-4 sm:flex-row" data-aos="fade-up" data-aos-delay="200">
                     <Link
                         href="/start-account"
                         class="rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
@@ -119,7 +119,7 @@ const features = [
                     </a>
                 </div>
 
-                <div class="mt-16 hidden items-center justify-center gap-6 text-sm text-gray-500 md:flex">
+                <div class="mt-16 hidden items-center justify-center gap-6 text-sm text-gray-500 md:flex" data-aos="fade-up" data-aos-delay="260">
                     <div class="flex items-center gap-2">
                         <Shield class="h-4 w-4 text-blue-600" />
                         <span>256-bit AES encryption</span>
@@ -138,15 +138,17 @@ const features = [
                 </section>
 
                 <section id="features" class="mx-auto mt-12 w-full max-w-7xl px-6">
-                    <div class="mb-16 text-center">
+                    <div class="mb-16 text-center" data-aos="fade-up">
                         <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">Best Features</h2>
                         <p class="text-lg text-gray-600">Powerful capabilities designed for your peace of mind</p>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <article
-                            v-for="feature in bestFeatures"
+                            v-for="(feature, index) in bestFeatures"
                             :key="feature.title"
+                            data-aos="fade-up"
+                            :data-aos-delay="index * 90"
                             class="group relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-10 shadow-sm transition-all hover:scale-[1.02] hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10"
                         >
                             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/0 transition-all group-hover:from-blue-500/[0.05] group-hover:to-blue-500/[0.02]" />
@@ -169,15 +171,17 @@ const features = [
                 </section>
 
                 <section id="security" class="mx-auto w-full max-w-7xl px-6 py-32">
-                    <div class="mb-20 text-center">
+                    <div class="mb-20 text-center" data-aos="fade-up">
                         <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">Security meets simplicity</h2>
                         <p class="text-lg text-gray-600">Everything you need to protect what matters most</p>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                         <article
-                            v-for="feature in features"
+                            v-for="(feature, index) in features"
                             :key="feature.title"
+                            data-aos="fade-up"
+                            :data-aos-delay="index * 70"
                             class="group relative cursor-pointer rounded-2xl border border-gray-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
                         >
                             <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 to-blue-500/0 transition-all group-hover:from-blue-500/[0.03] group-hover:to-blue-500/[0.01]" />
@@ -193,7 +197,7 @@ const features = [
                 </section>
 
                 <section id="pricing" class="mx-auto w-full max-w-7xl px-6 pb-28">
-                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 md:p-16">
+                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 md:p-16" data-aos="zoom-in-up">
                         <div class="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-400 opacity-20 blur-[100px]" />
                         <div class="relative text-center">
                             <h2 class="mb-6 text-4xl font-semibold tracking-tight text-gray-900 md:text-6xl">
