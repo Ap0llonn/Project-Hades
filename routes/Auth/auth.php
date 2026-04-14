@@ -9,6 +9,6 @@ Route::get('/login', function () {
 
 Route::post('/login', LoginController::class)->name('login.perform');
 
-Route::get('/signup', function () {
-    return Inertia::render('auth/pages/SignupPage');
-})->name('signup');
+require __DIR__ . '/register.php';
+
+require __DIR__ . '/email.php';
