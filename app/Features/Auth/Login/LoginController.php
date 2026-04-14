@@ -3,22 +3,13 @@
 namespace App\Features\Auth\Login;
 
 use Ecotone\Modelling\CommandBus;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 
 final class LoginController
 {
-    public function __invoke(LoginRequest $request, CommandBus $commandBus): JsonResponse
+    public function __invoke(LoginRequest $request, CommandBus $commandBus): RedirectResponse
     {
-        $result = $commandBus->send(
-            new LoginCommand(
-                email: (string) $request->string('email'),
-                password: (string) $request->string('password'),
-                remember: $request->boolean('remember'),
-            )
-        );
 
-        
-
-        return response()->json($result);
+        return redirect()->route('home');
     }
 }

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -7,31 +8,31 @@
 @source '../**/*.vue';
 
 :root {
-    --pm-font-sans: 'Inter', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --pm-font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --pm-background: #f7f9fc;
-    --pm-surface: #f7f9fc;
+    --pm-background: #ffffff;
+    --pm-surface: #ffffff;
     --pm-surface-container-lowest: #ffffff;
-    --pm-surface-container-low: #f2f4f7;
-    --pm-surface-container: #eceef1;
-    --pm-surface-container-high: #e6e8eb;
-    --pm-surface-container-highest: #e0e3e6;
-    --pm-surface-variant: #e0e3e6;
-    --pm-secondary-container: #c8d7ff;
-    --pm-tertiary-fixed: #ffdbcc;
-    --pm-primary: #0058bc;
-    --pm-primary-container: #0070eb;
-    --pm-primary-fixed: #d8e2ff;
-    --pm-tertiary: #9e3d00;
-    --pm-error-container: #ffdad6;
-    --pm-outline-variant: #c1c6d7;
-    --pm-on-surface: #191c1e;
-    --pm-on-surface-variant: #414755;
+    --pm-surface-container-low: #f8fafc;
+    --pm-surface-container: #f1f5f9;
+    --pm-surface-container-high: #e2e8f0;
+    --pm-surface-container-highest: #cbd5e1;
+    --pm-surface-variant: #e2e8f0;
+    --pm-secondary-container: #dbeafe;
+    --pm-tertiary-fixed: #eff6ff;
+    --pm-primary: #2563eb;
+    --pm-primary-container: #1d4ed8;
+    --pm-primary-fixed: #dbeafe;
+    --pm-tertiary: #1e3a8a;
+    --pm-error-container: #fee2e2;
+    --pm-outline-variant: #cbd5e1;
+    --pm-on-surface: #111827;
+    --pm-on-surface-variant: #4b5563;
     --pm-on-primary: #ffffff;
-    --pm-on-secondary-container: #4e5d80;
-    --pm-inverse-surface: #2d3133;
-    --pm-inverse-on-surface: #eff1f4;
+    --pm-on-secondary-container: #1e3a8a;
+    --pm-inverse-surface: #0f172a;
+    --pm-inverse-on-surface: #f8fafc;
     --pm-white: #ffffff;
 
     --pm-radius-xl: 0.75rem;
@@ -74,4 +75,13 @@
 body {
     background-color: var(--pm-background);
     color: var(--pm-on-surface);
+    font-family: var(--pm-font-sans);
+}
+
+a,
+button,
+input,
+textarea,
+select {
+    font-family: inherit;
 }
