@@ -53,8 +53,8 @@ const year = new Date().getFullYear();
                 </div>
 
                 <div class="flex gap-8 text-sm text-gray-600">
-                    <a href="#" class="transition-colors hover:text-blue-600">Privacy</a>
-                    <a href="#" class="transition-colors hover:text-blue-600">Terms</a>
+                    <a :href="route('privacy', {}, false)" class="transition-colors hover:text-blue-600">Privacy</a>
+                    <a :href="route('terms', {}, false)" class="transition-colors hover:text-blue-600">Terms</a>
                     <a href="#" class="transition-colors hover:text-blue-600">Security</a>
                     <a href="#" class="transition-colors hover:text-blue-600">Support</a>
                 </div>
