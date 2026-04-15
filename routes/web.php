@@ -10,3 +10,6 @@ Route::get('/', function () {
     return Inertia::render('home/pages/HomePage');
 })->name('home');;
 
+Route::domain('vault.passwordmanager.test')->get('/', function () {
+    return 'VAULT SUBDOMAIN WORKS 🔐';
+});
