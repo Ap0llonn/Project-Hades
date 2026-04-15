@@ -1,6 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { Fingerprint, LockKeyhole, ShieldCheck } from 'lucide-vue-next';
+import { route } from 'ziggy-js';
 import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
 
 defineProps({
@@ -29,10 +29,10 @@ const trustPoints = [
 
             <div class="relative mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-2">
                 <section class="rounded-[2rem] border border-outline-variant/50 bg-surface-container-low p-10 [box-shadow:0_40px_60px_-15px_rgb(25_28_30_/_0.06)]">
-                    <Link href="/" class="mb-10 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-primary">
+                    <a :href="route('home')" class="mb-10 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-primary">
                         <LockKeyhole class="h-5 w-5" />
                         <span>The Vault</span>
-                    </Link>
+                    </a>
 
                     <h1 class="mb-4 text-4xl font-extrabold tracking-tight">{{ title }}</h1>
                     <p class="mb-8 max-w-lg text-lg leading-relaxed text-on-surface-variant">

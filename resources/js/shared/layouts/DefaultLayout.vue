@@ -1,6 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { ShieldHalf } from 'lucide-vue-next';
+import { route } from 'ziggy-js';
 
 const year = new Date().getFullYear();
 </script>
@@ -9,33 +9,33 @@ const year = new Date().getFullYear();
     <div class="flex min-h-screen flex-col bg-white text-gray-900">
         <header class="relative z-30">
             <nav class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-8">
-                <Link href="/" class="flex items-center gap-3">
+                <a :href="route('home')" class="flex items-center gap-3">
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
                         <ShieldHalf class="h-5 w-5 text-white" />
                     </span>
                     <span class="text-xl font-bold tracking-tight text-gray-900">VaultGuardian</span>
-                </Link>
+                </a>
 
                 <div class="hidden items-center gap-8 md:flex">
                     <a href="#features" class="text-sm text-gray-600 transition-colors hover:text-blue-600">Features</a>
                     <a href="#security" class="text-sm text-gray-600 transition-colors hover:text-blue-600">Security</a>
                     <a href="#pricing" class="text-sm text-gray-600 transition-colors hover:text-blue-600">Pricing</a>
-                    <Link href="/login" class="px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
+                    <a :href="route('login', {}, false)" class="px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
                         Log In
-                    </Link>
-                    <Link href="/start-account" class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700">
+                    </a>
+                    <a :href="route('start-account', {}, false)" class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700">
                         Sign Up
-                    </Link>
+                    </a>
                 </div>
             </nav>
 
             <div class="mx-auto -mt-2 mb-4 flex w-full max-w-7xl items-center justify-end gap-3 px-6 md:hidden">
-                <Link href="/login" class="px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
+                <a :href="route('login', {}, false)" class="px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
                     Log In
-                </Link>
-                <Link href="/start-account" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-700">
+                </a>
+                <a :href="route('start-account', {}, false)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-700">
                     Sign Up
-                </Link>
+                </a>
             </div>
         </header>
 

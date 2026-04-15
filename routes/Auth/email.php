@@ -6,7 +6,6 @@ Route::get('/email-confirmation', [EmailVerificationController::class, 'confirma
     ->name('email.confirmation');
 
 Route::get('/email/verify', [EmailVerificationController::class, 'verify'])
-    ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 
 Route::get('/email-verified', [EmailVerificationController::class, 'success'])

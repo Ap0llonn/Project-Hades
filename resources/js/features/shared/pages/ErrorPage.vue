@@ -1,6 +1,7 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
-import { Home, Lock, Search, ShieldAlert } from 'lucide-vue-next';
+import { Head } from '@inertiajs/vue3';
+import { Home, Search, ShieldAlert } from 'lucide-vue-next';
+import { route } from 'ziggy-js';
 import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
 
 const props = defineProps({
@@ -77,14 +78,14 @@ function goBack() {
                         </p>
 
                         <div class="flex gap-4">
-                            <Link
-                                href="/"
+                            <a
+                                :href="route('home')"
                                 class="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
                                 style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
                             >
                                 <Home class="h-5 w-5" />
                                 Back to Home
-                            </Link>
+                            </a>
                             <button
                                 type="button"
                                 class="rounded-xl border border-gray-300 px-8 py-4 text-gray-900 transition-all hover:border-blue-600"
