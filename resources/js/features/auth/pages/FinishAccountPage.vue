@@ -2,11 +2,17 @@
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
-import { Eye, EyeOff, Fingerprint, Lock, Shield } from 'lucide-vue-next';
+import { CheckCircle2, Circle, Eye, EyeOff, Lock, Shield } from 'lucide-vue-next';
 import { CryptoGenerator } from '../../../shared/utils';
 import CryptoEncryptor from '../../../shared/utils/crypto/CryptoEncryptor';
+import {
+    getPasswordEntropy,
+    getPasswordMeterClass,
+    getPasswordStrengthLabel,
+    MIN_PASSWORD_LENGTH,
+    MIN_ZXCVBN_SCORE,
+} from '../utils/passwordValidation';
 import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
-import PasswordEntropyVerification from '../components/PasswordEntropyVerification.vue';
 
 const props = defineProps({
     email: {
@@ -20,11 +26,6 @@ const page = usePage();
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const cryptoError = ref('');
-const passwordValidation = ref({
-    message: '',
-    score: 0,
-    isEntropyMet: false,
-});
 
 const finishAccountRequest = useForm({
     id: route().params.id,
@@ -56,17 +57,40 @@ const encryptionErrorMessage = computed(
 
 const accountErrorMessage = computed(() => getError('email'));
 
-function handlePasswordValidationChange(nextValidationState) {
-    passwordValidation.value = nextValidationState;
-}
+const hasMinLength = computed(() => finishAccountRequest.password.length >= MIN_PASSWORD_LENGTH);
+const entropyResult = computed(() => getPasswordEntropy(finishAccountRequest.password, [props.email]));
+const entropyScore = computed(() => entropyResult.value?.score ?? 0);
+const entropyLabel = computed(() => getPasswordStrengthLabel(entropyScore.value));
+const entropyMeterClass = computed(() => getPasswordMeterClass(entropyScore.value));
+const entropyMeterWidth = computed(() => {
+    if (! finishAccountRequest.password) {
+        return '0%';
+    }
+
+    return `${((entropyScore.value + 1) / 5) * 100}%`;
+});
+const hasStrongEntropy = computed(() => entropyScore.value >= MIN_ZXCVBN_SCORE);
+const passwordsMatch = computed(
+    () =>
+        finishAccountRequest.password.length > 0 &&
+        finishAccountRequest.confirm_password.length > 0 &&
+        finishAccountRequest.password === finishAccountRequest.confirm_password,
+);
+const isValid = computed(
+    () => hasMinLength.value && hasStrongEntropy.value && passwordsMatch.value && !finishAccountRequest.processing,
+);
 
 async function handleSubmit() {
     cryptoError.value = '';
     finishAccountRequest.clearErrors();
 
-    const passwordValidationMessage = passwordValidation.value.message;
-    if (passwordValidationMessage) {
-        finishAccountRequest.setError('password', passwordValidationMessage);
+    if (! hasMinLength.value) {
+        finishAccountRequest.setError('password', `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+        return;
+    }
+
+    if (! hasStrongEntropy.value) {
+        finishAccountRequest.setError('password', 'Password entropy must be Strong or Very Strong.');
         return;
     }
 
@@ -119,113 +143,174 @@ async function handleSubmit() {
             <div class="fixed left-1/4 top-0 h-96 w-96 rounded-full bg-blue-500 opacity-15 blur-[120px]" />
             <div class="fixed bottom-0 right-1/4 h-96 w-96 rounded-full bg-blue-400 opacity-10 blur-[120px]" />
 
-            <section class="relative z-10 mx-auto w-full max-w-2xl px-6 pb-20 pt-14">
-                <div class="mb-10 text-center">
-                    <h1 class="mb-4 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">Finish account setup</h1>
-                    <p class="text-gray-600">Email verified for:</p>
-                    <p class="font-semibold text-blue-700">{{ props.email }}</p>
-                    <p v-if="accountErrorMessage" class="mt-3 text-sm text-red-600">
+            <div class="mx-auto max-w-2xl px-6 py-12">
+                <div>
+
+                    <h1
+                        class="mb-4 text-center text-4xl tracking-tight text-gray-900 md:text-5xl"
+                        style="font-family: 'DM Sans', sans-serif; font-weight: 700;"
+                    >
+                        Create your master password
+                    </h1>
+                    <p class="mb-3 text-center text-gray-600" style="font-family: 'DM Sans', sans-serif;">
+                        Creating account for <span class="text-blue-600" style="font-weight: 600;">{{ props.email }}</span>
+                    </p>
+                    <p class="mb-12 text-center text-sm text-gray-500" style="font-family: 'DM Sans', sans-serif;">
+                        This password encrypts your vault. Make it strong and memorable.
+                    </p>
+                    <p v-if="accountErrorMessage" class="mb-6 text-center text-sm text-red-600">
                         {{ accountErrorMessage }}
                     </p>
                 </div>
 
-                <form class="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl sm:p-8" @submit.prevent="handleSubmit">
-                    <div class="mb-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                        Important: your master password cannot be changed later. Store it safely before continuing.
-                    </div>
-
+                <form class="space-y-6" @submit.prevent="handleSubmit">
                     <div>
-                        <label for="password" class="mb-2 block text-sm font-semibold text-gray-700">Master password</label>
+                        <label class="mb-2 block text-sm text-gray-700" style="font-family: 'DM Sans', sans-serif; font-weight: 600;">
+                            Master Password
+                        </label>
                         <div class="relative">
-                            <Lock class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <Lock class="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                             <input
                                 id="password"
                                 v-model="finishAccountRequest.password"
                                 :type="showPassword ? 'text' : 'password'"
                                 autocomplete="new-password"
-                                placeholder="Choose a strong master password"
-                                class="w-full rounded-xl border border-gray-300 py-3.5 pl-12 pr-12 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="Create a strong master password"
+                                class="w-full rounded-xl border-2 border-gray-300 py-4 pl-14 pr-14 text-lg transition-all focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                                style="font-family: 'DM Sans', sans-serif;"
                             />
                             <button
                                 type="button"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                                class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
                                 @click="showPassword = !showPassword"
                             >
                                 <EyeOff v-if="showPassword" class="h-5 w-5" />
                                 <Eye v-else class="h-5 w-5" />
                             </button>
                         </div>
-                        <p class="mt-2 text-xs text-gray-500">
-                            At least 12 chars, mixed case, number, symbol, and strong entropy.
-                        </p>
-                        <p v-if="getError('password')" class="mt-2 text-xs text-red-600">
+                        <p v-if="getError('password')" class="mt-2 text-sm text-red-600">
                             {{ getError('password') }}
                         </p>
-                        <PasswordEntropyVerification
-                            :password="finishAccountRequest.password"
-                            :email="props.email"
-                            @validation-change="handlePasswordValidationChange"
-                        />
                     </div>
 
-                    <div class="mt-5">
-                        <label for="confirm_password" class="mb-2 block text-sm font-semibold text-gray-700">
-                            Confirm master password
+                    <div>
+                        <label class="mb-2 block text-sm text-gray-700" style="font-family: 'DM Sans', sans-serif; font-weight: 600;">
+                            Confirm Master Password
                         </label>
                         <div class="relative">
-                            <Lock class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <Lock class="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                             <input
                                 id="confirm_password"
                                 v-model="finishAccountRequest.confirm_password"
                                 :type="showConfirmPassword ? 'text' : 'password'"
-                                placeholder="Confirm your password"
-                                class="w-full rounded-xl border border-gray-300 py-3.5 pl-12 pr-12 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="Re-enter your master password"
+                                class="w-full rounded-xl border-2 border-gray-300 py-4 pl-14 pr-14 text-lg transition-all focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                                style="font-family: 'DM Sans', sans-serif;"
                             />
                             <button
                                 type="button"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                                class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
                                 @click="showConfirmPassword = !showConfirmPassword"
                             >
                                 <EyeOff v-if="showConfirmPassword" class="h-5 w-5" />
                                 <Eye v-else class="h-5 w-5" />
                             </button>
                         </div>
-                        <p
-                            v-if="getError('confirm_password')"
-                            class="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
-                        >
+                        <p v-if="getError('confirm_password')" class="mt-2 text-sm text-red-600">
                             {{ getError('confirm_password') }}
                         </p>
                     </div>
 
+                    <div class="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-6">
+                        <p class="mb-4 text-sm text-gray-900" style="font-family: 'DM Sans', sans-serif; font-weight: 700;">
+                            Password Requirements
+                        </p>
+                        <div class="mb-4">
+                            <div class="mb-2 flex items-center justify-between text-xs">
+                                <span class="text-gray-600" style="font-family: 'DM Sans', sans-serif;">Entropy strength</span>
+                                <span class="font-semibold text-gray-900" style="font-family: 'DM Sans', sans-serif;">
+                                    {{ entropyLabel }} ({{ entropyScore }}/4)
+                                </span>
+                            </div>
+                            <div class="h-2 w-full overflow-hidden rounded-full bg-blue-100">
+                                <div
+                                    class="h-full rounded-full transition-all"
+                                    :class="entropyMeterClass"
+                                    :style="{ width: entropyMeterWidth }"
+                                />
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <CheckCircle2 v-if="hasMinLength" class="h-5 w-5 shrink-0 text-blue-600" />
+                                <Circle v-else class="h-5 w-5 shrink-0 text-gray-400" />
+                                <span
+                                    class="text-sm"
+                                    :class="hasMinLength ? 'text-gray-900' : 'text-gray-500'"
+                                    style="font-family: 'DM Sans', sans-serif;"
+                                >
+                                    At least 12 characters
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <CheckCircle2 v-if="hasStrongEntropy" class="h-5 w-5 shrink-0 text-blue-600" />
+                                <Circle v-else class="h-5 w-5 shrink-0 text-gray-400" />
+                                <span
+                                    class="text-sm"
+                                    :class="hasStrongEntropy ? 'text-gray-900' : 'text-gray-500'"
+                                    style="font-family: 'DM Sans', sans-serif;"
+                                >
+                                    Strong entropy score
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <CheckCircle2 v-if="passwordsMatch" class="h-5 w-5 shrink-0 text-blue-600" />
+                                <Circle v-else class="h-5 w-5 shrink-0 text-gray-400" />
+                                <span
+                                    class="text-sm"
+                                    :class="passwordsMatch ? 'text-gray-900' : 'text-gray-500'"
+                                    style="font-family: 'DM Sans', sans-serif;"
+                                >
+                                    Passwords match
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <div class="flex gap-3">
+                            <Shield class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                            <div>
+                                <p class="mb-1 text-sm text-amber-900" style="font-family: 'DM Sans', sans-serif; font-weight: 600;">
+                                    Important: Keep this password safe
+                                </p>
+                                <p class="text-sm text-amber-800" style="font-family: 'DM Sans', sans-serif;">
+                                    We cannot reset your master password. If you forget it, you'll lose access to your vault permanently.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <p
                         v-if="encryptionErrorMessage"
-                        class="mt-5 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+                        class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
                     >
                         {{ encryptionErrorMessage }}
                     </p>
 
                     <button
                         type="submit"
-                        :disabled="finishAccountRequest.processing"
-                        class="mt-6 w-full rounded-xl bg-blue-600 px-5 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 disabled:cursor-not-allowed disabled:opacity-70"
+                        :disabled="!isValid"
+                        class="w-full rounded-xl py-4 text-white transition-all shadow-lg"
+                        :class="isValid
+                            ? 'cursor-pointer bg-blue-600 shadow-blue-600/20 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30'
+                            : 'cursor-not-allowed bg-gray-300 shadow-gray-300/20'"
+                        style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
                     >
-                        {{ finishAccountRequest.processing ? 'Securing Account...' : 'Finish Setup' }}
+                        {{ finishAccountRequest.processing ? 'Creating Vault...' : 'Create My Vault' }}
                     </button>
                 </form>
-
-                <div class="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 md:gap-8">
-                    <div class="flex items-center gap-2">
-                        <Shield class="h-4 w-4 text-blue-600" />
-                        <span>256-bit AES encryption</span>
-                    </div>
-                    <div class="hidden h-4 w-px bg-gray-300 md:block" />
-                    <div class="flex items-center gap-2">
-                        <Fingerprint class="h-4 w-4 text-blue-600" />
-                        <span>Biometric authentication</span>
-                    </div>
-                </div>
-            </section>
+            </div>
         </div>
     </AuthLayout>
 </template>
