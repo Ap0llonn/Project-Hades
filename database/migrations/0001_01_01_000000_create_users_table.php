@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('email')->unique();
             $table->string('email_hashed')->unique();
+            $table->string('password_hash');
             $table->string('first_name');
             $table->string('last_name');
             $table->json('master_key_wrapper');

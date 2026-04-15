@@ -10,7 +10,6 @@ const showPassword = ref(false);
 const loginRequest = useForm({
     email: '',
     password: '',
-    _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
 });
 
 const errorMessage = computed(() => loginRequest.errors.email || loginRequest.errors.password || '');

@@ -1,5 +1,7 @@
 <script setup>
+import { onBeforeUnmount, onMounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import Rellax from 'rellax';
 import { Eye, Fingerprint, Key, Lock, Shield, Zap } from 'lucide-vue-next';
 import DefaultLayout from '../../../shared/layouts/DefaultLayout.vue';
 
@@ -67,6 +69,28 @@ const features = [
     },
 ];
 
+let parallaxScreens = null;
+
+onMounted(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
+
+    parallaxScreens = new Rellax('.home-parallax-screen', {
+        center: true,
+        round: true,
+        vertical: true,
+        horizontal: false,
+    });
+});
+
+onBeforeUnmount(() => {
+    if (parallaxScreens) {
+        parallaxScreens.destroy();
+        parallaxScreens = null;
+    }
+});
+
 </script>
 
 <template>
@@ -119,22 +143,48 @@ const features = [
                     </a>
                 </div>
 
-                <div class="mt-16 hidden items-center justify-center gap-6 text-sm text-gray-500 md:flex" data-aos="fade-up" data-aos-delay="260">
-                    <div class="flex items-center gap-2">
-                        <Shield class="h-4 w-4 text-blue-600" />
-                        <span>256-bit AES encryption</span>
+
+                </section>
+
+                <section class="mx-auto w-full max-w-7xl px-6 pb-28 pt-8">
+                    <div class="mx-auto flex max-w-6xl flex-col items-center gap-6 md:flex-row md:items-end md:justify-center md:gap-8">
+                        <article
+                            class="home-parallax-screen relative h-72 w-full max-w-[380px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:h-[430px] md:max-w-none md:flex-1"
+                            data-rellax-speed="4"
+                        >
+                            <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
+                            <div class="space-y-4">
+                                <div class="h-3 w-full rounded-full bg-blue-100/35" />
+                                <div class="h-3 w-11/12 rounded-full bg-blue-100/35" />
+                                <div class="h-40 rounded-2xl border border-blue-200/40 bg-blue-100/20 md:h-56" />
+                            </div>
+                        </article>
+
+                        <article
+                            class="home-parallax-screen relative h-80 w-full max-w-[430px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-7 shadow-2xl shadow-blue-900/35 will-change-transform md:h-[500px] md:flex-[1.2]"
+                            data-rellax-speed="1.5"
+                        >
+                            <div class="mb-7 h-3 w-44 rounded-full bg-blue-200/80" />
+                            <div class="space-y-4">
+                                <div class="h-3 w-full rounded-full bg-blue-100/40" />
+                                <div class="h-3 w-10/12 rounded-full bg-blue-100/40" />
+                                <div class="h-3 w-9/12 rounded-full bg-blue-100/40" />
+                                <div class="h-48 rounded-2xl border border-blue-200/45 bg-blue-100/20 md:h-64" />
+                            </div>
+                        </article>
+
+                        <article
+                            class="home-parallax-screen relative h-72 w-full max-w-[380px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:h-[430px] md:max-w-none md:flex-1"
+                            data-rellax-speed="4"
+                        >
+                            <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
+                            <div class="space-y-4">
+                                <div class="h-3 w-full rounded-full bg-blue-100/35" />
+                                <div class="h-3 w-10/12 rounded-full bg-blue-100/35" />
+                                <div class="h-40 rounded-2xl border border-blue-200/40 bg-blue-100/20 md:h-56" />
+                            </div>
+                        </article>
                     </div>
-                    <div class="h-4 w-px bg-gray-300" />
-                    <div class="flex items-center gap-2">
-                        <Fingerprint class="h-4 w-4 text-blue-600" />
-                        <span>Biometric authentication</span>
-                    </div>
-                    <div class="h-4 w-px bg-gray-300" />
-                    <div class="flex items-center gap-2">
-                        <Eye class="h-4 w-4 text-blue-600" />
-                        <span>Zero-knowledge architecture</span>
-                    </div>
-                </div>
                 </section>
 
                 <section id="features" class="mx-auto mt-12 w-full max-w-7xl px-6">

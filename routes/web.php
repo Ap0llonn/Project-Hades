@@ -29,4 +29,8 @@ Route::domain('passwordmanager.test')->group(function () {
 Route::domain('vault.passwordmanager.test')->group(function () {
     require base_path('routes/Auth/FinishAccount/register.php');
     require base_path('routes/Auth/login.php');
+
+    Route::get('/dashboard', function () {
+        return Inertia::render('dashboard/pages/DashboardPage');
+    })->name('dashboard');
 });

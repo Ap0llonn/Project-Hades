@@ -22,6 +22,7 @@ final class RegisterUserHandler
             User::create([
                 'email' => $email,
                 'email_hashed' => hash_hmac('sha256', $email, (string) config('app.key')),
+                'password_hash' => hash_hmac('sha256', $command->password, (string) config('app.key')),
                 'first_name' => null,
                 'last_name' => null,
                 'master_key_wrapper' => $command->master_key_wrapper,

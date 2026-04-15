@@ -25,6 +25,7 @@ final class RegisterUserController
 
         $commandBus->send(new RegisterUserCommand(
             $pendingUser->email,
+            $request->input('password'),
             $request->input('encrypted_master_key'),
             $request->input('kdf_salt'),
             $request->input('kdf_params'),
