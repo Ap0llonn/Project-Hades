@@ -20,7 +20,7 @@ const year = new Date().getFullYear();
                     <a href="#features" class="text-sm text-gray-600 transition-colors hover:text-blue-600">Features</a>
                     <a href="#security" class="text-sm text-gray-600 transition-colors hover:text-blue-600">Security</a>
                     <a href="#pricing" class="text-sm text-gray-600 transition-colors hover:text-blue-600">Pricing</a>
-                    <a :href="route('login', {}, false)" class="px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
+                    <a :href="route('login')" class="px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
                         Log In
                     </a>
                     <a :href="route('start-account', {}, false)" class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700">
@@ -30,7 +30,7 @@ const year = new Date().getFullYear();
             </nav>
 
             <div class="mx-auto -mt-2 mb-4 flex w-full max-w-7xl items-center justify-end gap-3 px-6 md:hidden">
-                <a :href="route('login', {}, false)" class="px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
+                <a :href="route('login')" class="px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:text-blue-600">
                     Log In
                 </a>
                 <a :href="route('start-account', {}, false)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-700">

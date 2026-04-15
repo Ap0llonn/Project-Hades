@@ -16,6 +16,11 @@ Route::get('/privacy-policy', function () {
 
 Route::domain('passwordmanager.test')->group(function () {
     require base_path('routes/Auth/StartAccount/startAccount.php');
+
+    Route::get('/login', function () {
+        return redirect()->route('login');
+    });
+
     Route::get('/', function () {
         return Inertia::render('home/pages/HomePage');
     })->name('home');;
@@ -23,4 +28,5 @@ Route::domain('passwordmanager.test')->group(function () {
 
 Route::domain('vault.passwordmanager.test')->group(function () {
     require base_path('routes/Auth/FinishAccount/register.php');
+    require base_path('routes/Auth/login.php');
 });
