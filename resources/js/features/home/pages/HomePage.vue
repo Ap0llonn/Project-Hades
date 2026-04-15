@@ -193,31 +193,31 @@ const features = [
                 </section>
 
                 <section id="pricing" class="mx-auto w-full max-w-7xl px-6 pb-28">
-                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 md:p-16">
-                        <div class="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-400 opacity-20 blur-[100px]" />
+                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800/70 md:p-16">
+                        <div class="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-400 opacity-20 blur-[100px] dark:bg-blue-500 dark:opacity-15" />
                         <div class="relative text-center">
-                            <h2 class="mb-6 text-4xl font-semibold tracking-tight text-gray-900 md:text-6xl">
+                            <h2 class="mb-6 text-4xl font-semibold tracking-tight text-gray-900 dark:text-slate-100 md:text-6xl">
                                 Ready to secure your digital life?
                             </h2>
-                            <p class="mx-auto mb-10 max-w-2xl text-lg text-gray-600">
+                            <p class="mx-auto mb-10 max-w-2xl text-lg text-gray-600 dark:text-slate-300">
                                 Join thousands of users who trust VaultGuardian to protect their most important accounts.
                                 Start your 30-day free trial today.
                             </p>
                             <div class="flex flex-col justify-center gap-4 sm:flex-row">
                                 <Link
                                     href="/start-account"
-                                    class="rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
+                                    class="rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 dark:bg-blue-500 dark:text-slate-950 dark:shadow-blue-500/20 dark:hover:bg-blue-400 dark:hover:shadow-blue-500/30"
                                 >
                                     Get Started Free
                                 </Link>
                                 <a
                                     href="#"
-                                    class="rounded-xl border border-gray-300 bg-white px-8 py-4 font-semibold text-gray-900 transition-all hover:border-blue-600"
+                                    class="rounded-xl border border-gray-300 bg-white px-8 py-4 font-semibold text-gray-900 transition-all hover:border-blue-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-blue-400"
                                 >
                                     Contact Sales
                                 </a>
                             </div>
-                            <p class="mt-6 text-sm text-gray-500">No credit card required | Cancel anytime</p>
+                            <p class="mt-6 text-sm text-gray-500 dark:text-slate-400">No credit card required | Cancel anytime</p>
                         </div>
                     </div>
                 </section>

@@ -142,12 +142,12 @@ select {
 .theme-transition *::before,
 .theme-transition *::after {
     transition:
-        background-color 1000ms ease,
-        color 260ms ease,
-        border-color 260ms ease,
-        fill 260ms ease,
-        stroke 260ms ease,
-        box-shadow 260ms ease !important;
+        background-color 500ms ease,
+        color 500ms ease,
+        border-color 500ms ease,
+        fill 500ms ease,
+        stroke 500ms ease,
+        box-shadow 500ms ease !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
