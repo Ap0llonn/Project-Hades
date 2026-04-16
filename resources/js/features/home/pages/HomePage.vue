@@ -146,11 +146,11 @@ onBeforeUnmount(() => {
 
                 </section>
 
-                <section class="mx-auto w-full max-w-7xl px-6 pb-28 pt-8">
-                    <div class="mx-auto flex max-w-6xl flex-col items-center gap-6 md:flex-row md:items-end md:justify-center md:gap-8">
+                <section class="mx-auto w-full max-w-7xl px-6 pb-36 pt-14 md:min-h-[88vh] md:pb-48 md:pt-24">
+                    <div class="mx-auto flex max-w-7xl flex-col items-center gap-6 md:h-[78vh] md:flex-row md:items-center md:justify-center md:gap-8">
                         <article
-                            class="home-parallax-screen relative h-72 w-full max-w-[380px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:h-[430px] md:max-w-none md:flex-1"
-                            data-rellax-speed="4"
+                            class="home-parallax-screen relative h-80 w-full max-w-[440px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:h-[540px] md:max-w-none md:flex-1"
+                            data-rellax-speed="6"
                         >
                             <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
                             <div class="space-y-4">
@@ -161,8 +161,8 @@ onBeforeUnmount(() => {
                         </article>
 
                         <article
-                            class="home-parallax-screen relative h-80 w-full max-w-[430px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-7 shadow-2xl shadow-blue-900/35 will-change-transform md:h-[500px] md:flex-[1.2]"
-                            data-rellax-speed="1.5"
+                            class="home-parallax-screen relative h-96 w-full max-w-[500px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-7 shadow-2xl shadow-blue-900/35 will-change-transform md:h-[640px] md:flex-[1.25]"
+                            data-rellax-speed="2"
                         >
                             <div class="mb-7 h-3 w-44 rounded-full bg-blue-200/80" />
                             <div class="space-y-4">
@@ -174,8 +174,8 @@ onBeforeUnmount(() => {
                         </article>
 
                         <article
-                            class="home-parallax-screen relative h-72 w-full max-w-[380px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:h-[430px] md:max-w-none md:flex-1"
-                            data-rellax-speed="4"
+                            class="home-parallax-screen relative h-80 w-full max-w-[440px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:h-[540px] md:max-w-none md:flex-1"
+                            data-rellax-speed="6"
                         >
                             <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
                             <div class="space-y-4">
