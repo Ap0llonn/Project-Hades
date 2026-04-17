@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: Docker/Development/Dockerfile.app
+    volumes:
+      - ../../src:/var/www/html
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vault.rule=Host(`vaultguardian.test`)"
+      - "traefik.http.routers.vaultsub.rule=Host(`vault.vaultguardian.test`)"
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ../../src:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaultweb.rule=Host(`vaultguardian.test`)"
+      - "traefik.http.routers.vaultsubweb.rule=Host(`vault.vaultguardian.test`)"
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: vault
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
