@@ -11,7 +11,8 @@ use Illuminate\Validation\ValidationException;
 final class LoginHandler
 {
 
-    public function handle(LoginCommand $command): array
+    #[CommandHandler]
+    public function handle(LoginCommand $command): void
     {
 
     }
