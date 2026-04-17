@@ -1,10 +1,7 @@
 <?php
 
-use App\Features\Auth\Login\LoginController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
-require __DIR__ . '/Auth/auth.php';
 
 Route::get('/terms-of-service', function () {
     return Inertia::render('shared/pages/TermsOfServicePage');
@@ -14,23 +11,28 @@ Route::get('/privacy-policy', function () {
     return Inertia::render('shared/pages/PrivacyPolicyPage');
 })->name('privacy');
 
-Route::domain('passwordmanager.test')->group(function () {
-    require base_path('routes/Auth/StartAccount/startAccount.php');
+Route::domain('vaultguardian.test')
+    ->middleware('marketing.domain')
+    ->group(function () {
+        require base_path('routes/Auth/StartAccount/startAccount.php');
 
-    Route::get('/login', function () {
-        return redirect()->route('login');
+        Route::get('/login', function () {
+            return redirect()->route('login');
+        });
+
+        Route::get('/', function () {
+            return Inertia::render('home/pages/HomePage');
+        })->name('home');
     });
 
-    Route::get('/', function () {
-        return Inertia::render('home/pages/HomePage');
-    })->name('home');;
-});
+Route::domain('vault.vaultguardian.test')
+    ->middleware('vault.domain')
+    ->group(function () {
+        require base_path('routes/Auth/email.php');
+        require base_path('routes/Auth/FinishAccount/register.php');
+        require base_path('routes/Auth/login.php');
 
-Route::domain('vault.passwordmanager.test')->group(function () {
-    require base_path('routes/Auth/FinishAccount/register.php');
-    require base_path('routes/Auth/login.php');
-
-    Route::get('/dashboard', function () {
-        return Inertia::render('dashboard/pages/DashboardPage');
-    })->name('dashboard');
-});
+        Route::get('/dashboard', function () {
+            return Inertia::render('dashboard/pages/DashboardPage');
+        })->name('dashboard');
+    });

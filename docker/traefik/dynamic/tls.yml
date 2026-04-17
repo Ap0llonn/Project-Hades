@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/vaultguardian.test.pem
+      keyFile: /etc/traefik/certs/vaultguardian.test-key.pem
