@@ -14,12 +14,13 @@ class EmailVerificationController
 {
     public function confirmation(Request $request): Response|RedirectResponse
     {
-        if (! $request->session()->pull('email_confirmation_sent', false)) {
-            return redirect()->route('start-account');
+        $email = trim((string) $request->query('email', ''));
+        if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $email = '';
         }
 
         return Inertia::render('auth/pages/EmailConfirmationPage', [
-            'email' => (string) $request->session()->get('email_confirmation_email', ''),
+            'email' => $email,
         ]);
     }
 

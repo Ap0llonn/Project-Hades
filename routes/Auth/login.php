@@ -2,6 +2,7 @@
 
 use App\Features\Auth\Login\LoginController;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/login', function () {
     return Inertia::render('auth/pages/LoginPage');

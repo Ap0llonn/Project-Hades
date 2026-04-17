@@ -1,5 +1,5 @@
 <script setup>
-import {Head, Link, useForm} from '@inertiajs/vue3';
+import {Head, useForm} from '@inertiajs/vue3';
 import {ArrowRight, Lock, Mail, RefreshCw} from 'lucide-vue-next';
 import {route} from 'ziggy-js';
 import AuthLayout from "@/shared/layouts/AuthLayout.vue";
@@ -20,7 +20,7 @@ function handleResend() {
         return;
     }
 
-    resendForm.post(route('start-account.perform'));
+    resendForm.post(route('email.confirmation.resend'));
 }
 </script>
 
@@ -95,13 +95,13 @@ function handleResend() {
                         </div>
 
                         <div class="animate-fade-up mt-8" style="animation-delay: 720ms;">
-                            <Link
+                            <a
                                 :href="route('start-account')"
                                 class="text-sm text-gray-600 transition-colors hover:text-blue-600"
                                 style="font-family: 'DM Sans', sans-serif;"
                             >
                                 Wrong email? <span style="font-weight: 600;">Go back and change it</span>
-                            </Link>
+                            </a>
                         </div>
                     </div>
                 </div>

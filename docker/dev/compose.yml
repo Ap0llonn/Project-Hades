@@ -43,10 +43,31 @@ services:
       - "traefik.http.services.vault-service.loadbalancer.server.port=80"
 
   db:
-    image: mysql:8
+    image: postgres:16
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: vault
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: vault
+    ports:
+      - "5432:5432"
+    networks:
+      - web
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile
+    command: ["php", "artisan", "queue:work", "database", "--queue=default", "--sleep=1", "--tries=3", "--timeout=120"]
+    volumes:
+      - ../../:/var/www/html
+    networks:
+      - web
+    depends_on:
+      - db
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8026:8025"
     networks:
       - web
 
