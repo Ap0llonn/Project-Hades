@@ -129,10 +129,10 @@ function handleSubmit() {
 
                 <section class="mx-auto mt-8 w-full max-w-5xl md:mt-10" data-aos="fade-up" data-aos-delay="280">
                     <div class="mb-5 text-center">
-                        <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">
+                        <p class="text-sm font-semibold uppercase tracking-[0.14em] text-primary">
                             Trusted by Reviewers
                         </p>
-                        <p class="mt-1 text-xs text-gray-500">
+                        <p class="mt-1 text-xs text-on-surface-variant">
                             Independent customer review platforms
                         </p>
                     </div>
@@ -141,38 +141,38 @@ function handleSubmit() {
                         <article
                             v-for="(review, index) in trustReviews"
                             :key="review.source"
-                            class="rounded-xl border border-blue-100 bg-white/70 p-5 text-left shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+                            class="rounded-xl border border-outline-variant/80 bg-surface-container/85 p-5 text-left shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:bg-surface-container-high/85 hover:shadow-md"
                             data-aos="fade-up"
                             :data-aos-delay="320 + (index * 90)"
                         >
                             <div class="mb-3 flex items-center justify-between">
-                                <p class="text-base font-semibold text-gray-900" style="font-family: 'DM Sans', sans-serif;">{{ review.source }}</p>
-                                <p class="text-sm font-bold text-blue-600">{{ review.rating }}</p>
+                                <p class="text-base font-semibold text-on-surface" style="font-family: 'DM Sans', sans-serif;">{{ review.source }}</p>
+                                <p class="text-sm font-bold text-primary">{{ review.rating }}</p>
                             </div>
 
                             <div class="mb-3 flex items-center gap-1.5">
-                                <Star v-for="star in 5" :key="`${review.source}-${star}`" class="h-4 w-4 fill-blue-500 text-blue-500" />
+                                <Star v-for="star in 5" :key="`${review.source}-${star}`" class="h-4 w-4 fill-primary text-primary" />
                             </div>
 
-                            <p class="mb-2 text-sm font-medium text-gray-700" style="font-family: 'DM Sans', sans-serif;">{{ review.summary }}</p>
-                            <p class="text-xs text-gray-500" style="font-family: 'DM Sans', sans-serif;">{{ review.reviews }}</p>
+                            <p class="mb-2 text-sm font-medium text-on-surface-variant" style="font-family: 'DM Sans', sans-serif;">{{ review.summary }}</p>
+                            <p class="text-xs text-on-surface-variant" style="font-family: 'DM Sans', sans-serif;">{{ review.reviews }}</p>
                         </article>
                     </div>
                 </section>
 
-                <div class="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 md:mt-10 md:gap-8" data-aos="fade-up" data-aos-delay="560">
+                <div class="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-on-surface-variant md:mt-10 md:gap-8" data-aos="fade-up" data-aos-delay="560">
                     <div class="flex items-center gap-2">
-                        <Shield class="h-4 w-4 text-blue-600" />
+                        <Shield class="h-4 w-4 text-primary" />
                         <span>256-bit AES encryption</span>
                     </div>
-                    <div class="hidden h-4 w-px bg-gray-300 md:block" />
+                    <div class="hidden h-4 w-px bg-outline-variant md:block" />
                     <div class="flex items-center gap-2">
-                        <Fingerprint class="h-4 w-4 text-blue-600" />
+                        <Fingerprint class="h-4 w-4 text-primary" />
                         <span>Biometric authentication</span>
                     </div>
-                    <div class="hidden h-4 w-px bg-gray-300 md:block" />
+                    <div class="hidden h-4 w-px bg-outline-variant md:block" />
                     <div class="flex items-center gap-2">
-                        <Eye class="h-4 w-4 text-blue-600" />
+                        <Eye class="h-4 w-4 text-primary" />
                         <span>Zero-knowledge architecture</span>
                     </div>
                 </div>

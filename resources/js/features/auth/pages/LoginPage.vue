@@ -137,15 +137,6 @@ function handleSubmit() {
                         {{ loginRequest.processing ? 'Signing In...' : 'Sign In' }}
                     </button>
 
-                    <div class="rounded-xl border border-blue-200 bg-blue-50 p-4" data-aos="fade-up" data-aos-delay="520">
-                        <div class="flex gap-3">
-                            <Shield class="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-                            <p class="text-sm text-gray-700" style="font-family: 'DM Sans', sans-serif;">
-                                Your vault remains protected with zero-knowledge encryption on every sign in.
-                            </p>
-                        </div>
-                    </div>
-
                     <p class="text-center text-gray-600" style="font-family: 'DM Sans', sans-serif;" data-aos="fade-up" data-aos-delay="580">
                         Don't have an account?
                         <a :href="route('start-account')" class="font-semibold text-blue-600 transition-colors hover:text-blue-700">

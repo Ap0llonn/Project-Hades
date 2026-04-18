@@ -1,6 +1,7 @@
 <script setup>
 import { ShieldHalf } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
+import ThemeModeDropdown from '../components/ThemeModeDropdown.vue';
 
 const year = new Date().getFullYear();
 </script>
@@ -15,6 +16,7 @@ const year = new Date().getFullYear();
                     </span>
                     <span class="text-xl font-bold tracking-tight text-gray-900">VaultGuardian</span>
                 </a>
+                <ThemeModeDropdown />
             </nav>
         </header>
 
