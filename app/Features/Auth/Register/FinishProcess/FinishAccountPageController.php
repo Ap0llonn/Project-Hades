@@ -12,10 +12,17 @@ final class FinishAccountPageController
 {
     public function __invoke(Request $request): Response|RedirectResponse
     {
+        $verifiedPendingUserId = (string) $request->session()->get('finish_account.pending_user_id', '');
+        $requestedPendingUserId = (string) $request->query('id', '');
 
-        $pendingUser = PendingUser::find($request->id);
+        if ($verifiedPendingUserId === '' || $verifiedPendingUserId !== $requestedPendingUserId) {
+            return redirect()->route('start-account');
+        }
 
-        if (! $pendingUser || now()->gt($pendingUser->expires_at)) {
+        $pendingUser = PendingUser::find($verifiedPendingUserId);
+
+        if (! $pendingUser || now()->gt($pendingUser->expires_at) || $pendingUser->used_at === null) {
+            $request->session()->forget('finish_account.pending_user_id');
             return redirect()->route('start-account');
         }
 

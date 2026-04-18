@@ -12,10 +12,15 @@ final class RegisterUserController
 {
     public function __invoke(RegisterUserRequest $request, CommandBus $commandBus): RedirectResponse
     {
+        $verifiedPendingUserId = (string) $request->session()->get('finish_account.pending_user_id', '');
+        if ($verifiedPendingUserId === '') {
+            return redirect()->route('start-account');
+        }
 
-        $pendingUser = PendingUser::find($request->id);
+        $pendingUser = PendingUser::find($verifiedPendingUserId);
 
-        if (! $pendingUser || now()->gt($pendingUser->expires_at)) {
+        if (! $pendingUser || now()->gt($pendingUser->expires_at) || $pendingUser->used_at === null) {
+            $request->session()->forget('finish_account.pending_user_id');
             return redirect()->route('start-account');
         }
 
@@ -32,6 +37,7 @@ final class RegisterUserController
         ));
 
         $pendingUser->delete();
+        $request->session()->forget('finish_account.pending_user_id');
 
         return redirect()->route('login');
     }

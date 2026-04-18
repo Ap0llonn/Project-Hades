@@ -55,6 +55,8 @@ class EmailVerificationController
             'used_at' => now(),
         ]);
 
+        $request->session()->put('finish_account.pending_user_id', $pendingUser->id);
+
         $setupUrl = URL::temporarySignedRoute(
             'finish-account',
             now()->addMinutes(10),

@@ -13,5 +13,3 @@ Route::post('/start-account', StartAccountController::class)->middleware("thrott
 Route::get('/email-confirmation', [EmailVerificationController::class, 'confirmation'])
     ->name('email.confirmation');
 
-Route::post('/email-confirmation/resend', StartAccountController::class)
-    ->name('email.confirmation.resend');
