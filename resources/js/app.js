@@ -4,7 +4,8 @@ import { router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { createApp, h } from 'vue';
+import { createApp, Fragment, h } from 'vue';
+import ToastViewport from './shared/components/ToastViewport.vue';
 
 const THEME_STORAGE_KEY = 'pm-theme';
 const THEME_TRANSITION_CLASS = 'theme-transition';
@@ -68,7 +69,13 @@ createInertiaApp({
             import.meta.glob('./features/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
+        createApp({
+            render: () =>
+                h(Fragment, null, [
+                    h(App, props),
+                    h(ToastViewport),
+                ]),
+        })
             .use(plugin)
             .mount(el);
 

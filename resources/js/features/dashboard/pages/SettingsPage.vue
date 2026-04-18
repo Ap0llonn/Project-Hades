@@ -6,15 +6,23 @@ import {
     ChevronRight,
     CreditCard,
     Database,
+    Fingerprint,
+    KeyRound,
     Laptop,
     Shield,
+    Smartphone,
     User,
 } from 'lucide-vue-next';
 import DashboardLayout from '../layouts/DashboardLayout.vue';
+import { useToast } from '../../../shared/toast';
 
 const selectedCategory = ref('all');
 const activeSection = ref('profile');
-const mfaMethod = ref('email');
+const twoFactorEnabled = ref(false);
+const mfaEmailEnabled = ref(true);
+const mfaTotpEnabled = ref(false);
+const passkeyEnabled = ref(false);
+const biometricEnabled = ref(true);
 
 const settingsSections = [
     {
@@ -26,7 +34,7 @@ const settingsSections = [
     {
         id: 'security',
         label: 'Security',
-        description: 'MFA, login protection, and recovery controls',
+        description: 'MFA and login protection controls',
         icon: Shield,
     },
     {
@@ -108,6 +116,14 @@ const activeSessions = [
 const activeSectionConfig = computed(() =>
     settingsSections.find((section) => section.id === activeSection.value) ?? settingsSections[0],
 );
+
+const toast = useToast();
+
+const handleSaveChanges = () => {
+    toast.confirmation('Your settings have been saved.', {
+        title: 'Settings updated',
+    });
+};
 </script>
 
 <template>
@@ -184,32 +200,186 @@ const activeSectionConfig = computed(() =>
                         </div>
 
                         <div v-else-if="activeSection === 'security'" class="space-y-4">
-                            <article class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
-                                <p class="font-medium text-on-surface">MFA (Email / Token)</p>
-                                <p class="mt-1 text-sm text-on-surface-variant">Choose your second factor for account sign-in protection.</p>
-                                <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                                    <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface px-3 py-2.5">
-                                        <input v-model="mfaMethod" type="radio" value="email" name="mfa_method" class="h-4 w-4 accent-primary">
-                                        <span class="text-sm text-on-surface">Email code</span>
-                                    </label>
-                                    <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface px-3 py-2.5">
-                                        <input v-model="mfaMethod" type="radio" value="token" name="mfa_method" class="h-4 w-4 accent-primary">
-                                        <span class="text-sm text-on-surface">Authenticator token (TOTP)</span>
-                                    </label>
+                            <article class="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low">
+                                <div class="border-b border-outline-variant p-5">
+                                    <h3 class="text-2xl font-semibold tracking-tight text-on-surface">Authentication Methods</h3>
+                                    <p class="mt-1 text-sm text-on-surface-variant">Manage how you access your vault</p>
                                 </div>
-                            </article>
 
-                            <article class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
-                                <p class="font-medium text-on-surface">Change Password</p>
-                                <p class="mt-1 text-sm text-on-surface-variant">Update your master password and keep your vault secure.</p>
-                                <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                                    <input type="password" placeholder="Current password" class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none">
-                                    <input type="password" placeholder="New password" class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none">
-                                    <input type="password" placeholder="Confirm new password" class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none">
+                                <div class="divide-y divide-outline-variant">
+                                    <div class="flex items-center justify-between gap-4 p-5">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                                                <KeyRound class="h-6 w-6" />
+                                            </div>
+                                            <div>
+                                                <p class="text-2xl font-semibold tracking-tight text-on-surface">Master Password</p>
+                                                <p class="mt-1 text-sm text-on-surface-variant">Your primary authentication method</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="text-lg font-medium text-primary transition-colors hover:text-primary-container"
+                                        >
+                                            Change Password
+                                        </button>
+                                    </div>
+
+                                    <div class="p-5">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <div class="flex items-center gap-4">
+                                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                                                    <Smartphone class="h-6 w-6" />
+                                                </div>
+                                                <div>
+                                                    <p class="text-2xl font-semibold tracking-tight text-on-surface">Two-Factor Authentication (2FA)</p>
+                                                    <p class="mt-1 text-sm text-on-surface-variant">Add an extra layer of security with 2FA</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
+                                                :class="twoFactorEnabled ? 'bg-primary' : 'bg-surface-container-high'"
+                                                @click="twoFactorEnabled = !twoFactorEnabled"
+                                            >
+                                                <span
+                                                    class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
+                                                    :class="twoFactorEnabled ? 'translate-x-7' : 'translate-x-1'"
+                                                />
+                                            </button>
+                                        </div>
+
+                                        <div v-if="twoFactorEnabled" class="mt-4 border-t border-outline-variant pt-4">
+                                            <p class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Two-factor methods</p>
+
+                                            <article class="flex items-start justify-between gap-4 border-b border-outline-variant py-4">
+                                                <div class="flex min-w-0 items-start gap-3">
+                                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary-container text-primary">
+                                                        <Smartphone class="h-5 w-5" />
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="font-semibold text-on-surface">Authenticator app</p>
+                                                            <span
+                                                                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                                                                :class="mfaTotpEnabled
+                                                                    ? 'bg-secondary-container text-primary'
+                                                                    : 'bg-surface-container-high text-on-surface-variant'"
+                                                            >
+                                                                {{ mfaTotpEnabled ? 'Configured' : 'Not configured' }}
+                                                            </span>
+                                                        </div>
+                                                        <p class="mt-1 text-sm text-on-surface-variant">
+                                                            Use an authenticator app or browser extension to get verification codes.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    class="shrink-0 rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
+                                                    @click="mfaTotpEnabled = !mfaTotpEnabled"
+                                                >
+                                                    {{ mfaTotpEnabled ? 'Edit' : 'Setup' }}
+                                                </button>
+                                            </article>
+
+                                            <article class="flex items-start justify-between gap-4 pt-4">
+                                                <div class="flex min-w-0 items-start gap-3">
+                                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant">
+                                                        <Bell class="h-5 w-5" />
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="font-semibold text-on-surface">Email code</p>
+                                                            <span
+                                                                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                                                                :class="mfaEmailEnabled
+                                                                    ? 'bg-secondary-container text-primary'
+                                                                    : 'bg-surface-container-high text-on-surface-variant'"
+                                                            >
+                                                                {{ mfaEmailEnabled ? 'Configured' : 'Not configured' }}
+                                                            </span>
+                                                        </div>
+                                                        <p class="mt-1 text-sm text-on-surface-variant">
+                                                            Receive one-time codes by email when additional verification is required.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    class="shrink-0 rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
+                                                    @click="mfaEmailEnabled = !mfaEmailEnabled"
+                                                >
+                                                    {{ mfaEmailEnabled ? 'Edit' : 'Setup' }}
+                                                </button>
+                                            </article>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-5">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <div class="flex items-center gap-4">
+                                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                                                    <Shield class="h-6 w-6" />
+                                                </div>
+                                                <div>
+                                                    <p class="text-2xl font-semibold tracking-tight text-on-surface">Passkey</p>
+                                                    <p class="mt-1 text-sm text-on-surface-variant">Sign in without a password</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
+                                                :class="passkeyEnabled ? 'bg-primary' : 'bg-surface-container-high'"
+                                                @click="passkeyEnabled = !passkeyEnabled"
+                                            >
+                                                <span
+                                                    class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
+                                                    :class="passkeyEnabled ? 'translate-x-7' : 'translate-x-1'"
+                                                />
+                                            </button>
+                                        </div>
+
+                                        <div v-if="passkeyEnabled" class="mt-4 space-y-2 border-t border-outline-variant pt-4">
+                                            <div
+                                                v-for="passkey in passkeys"
+                                                :key="passkey.name"
+                                                class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5"
+                                            >
+                                                <p class="text-sm font-medium text-on-surface">{{ passkey.name }}</p>
+                                                <p class="text-xs text-on-surface-variant">Registered on {{ passkey.createdAt }}</p>
+                                            </div>
+                                            <button type="button" class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
+                                                Register New Passkey
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-5">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <div class="flex items-center gap-4">
+                                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+                                                    <Fingerprint class="h-6 w-6" />
+                                                </div>
+                                                <div>
+                                                    <p class="text-2xl font-semibold tracking-tight text-on-surface">Biometric Security</p>
+                                                    <p class="mt-1 text-sm text-on-surface-variant">Face ID, Touch ID, or Windows Hello</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
+                                                :class="biometricEnabled ? 'bg-primary' : 'bg-surface-container-high'"
+                                                @click="biometricEnabled = !biometricEnabled"
+                                            >
+                                                <span
+                                                    class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
+                                                    :class="biometricEnabled ? 'translate-x-7' : 'translate-x-1'"
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button type="button" class="mt-4 rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface">
-                                    Update Password
-                                </button>
                             </article>
 
                             <article class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
@@ -238,24 +408,6 @@ const activeSectionConfig = computed(() =>
                                         </button>
                                     </div>
                                 </div>
-                            </article>
-
-                            <article class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
-                                <p class="font-medium text-on-surface">Passkey</p>
-                                <p class="mt-1 text-sm text-on-surface-variant">Use passkeys for phishing-resistant passwordless login.</p>
-                                <div class="mt-4 space-y-2">
-                                    <div
-                                        v-for="passkey in passkeys"
-                                        :key="passkey.name"
-                                        class="rounded-lg border border-outline-variant bg-surface px-3 py-2.5"
-                                    >
-                                        <p class="text-sm font-medium text-on-surface">{{ passkey.name }}</p>
-                                        <p class="text-xs text-on-surface-variant">Registered on {{ passkey.createdAt }}</p>
-                                    </div>
-                                </div>
-                                <button type="button" class="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
-                                    Register New Passkey
-                                </button>
                             </article>
 
                             <article class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
@@ -345,6 +497,7 @@ const activeSectionConfig = computed(() =>
                             <button
                                 type="button"
                                 class="rounded-lg bg-primary px-5 py-2.5 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                                @click="handleSaveChanges"
                             >
                                 Save Changes
                             </button>
