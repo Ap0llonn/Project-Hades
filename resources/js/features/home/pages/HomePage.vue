@@ -271,13 +271,16 @@ onBeforeUnmount(() => {
                 </section>
 
                 <section id="pricing" class="mx-auto w-full max-w-7xl px-6 pb-28">
-                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 md:p-16" data-aos="zoom-in-up">
-                        <div class="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-400 opacity-20 blur-[100px]" />
+                    <div
+                        class="relative overflow-hidden rounded-3xl border border-outline-variant bg-gradient-to-br from-surface-container to-surface-container-high p-10 md:p-16"
+                        data-aos="zoom-in-up"
+                    >
+                        <div class="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary opacity-20 blur-[100px]" />
                         <div class="relative text-center">
-                            <h2 class="mb-6 text-4xl font-semibold tracking-tight text-gray-900 md:text-6xl">
+                            <h2 class="mb-6 text-4xl font-semibold tracking-tight text-on-surface md:text-6xl">
                                 Ready to secure your digital life?
                             </h2>
-                            <p class="mx-auto mb-10 max-w-2xl text-lg text-gray-600">
+                            <p class="mx-auto mb-10 max-w-2xl text-lg text-on-surface-variant">
                                 Join thousands of users who trust VaultGuardian to protect their most important accounts.
                                 Start your 30-day free trial today.
                             </p>
@@ -290,12 +293,12 @@ onBeforeUnmount(() => {
                                 </Link>
                                 <a
                                     href="#"
-                                    class="rounded-xl border border-gray-300 bg-white px-8 py-4 font-semibold text-gray-900 transition-all hover:border-blue-600"
+                                    class="rounded-xl border border-outline-variant bg-surface px-8 py-4 font-semibold text-on-surface transition-all hover:border-primary"
                                 >
                                     Contact Sales
                                 </a>
                             </div>
-                            <p class="mt-6 text-sm text-gray-500">No credit card required | Cancel anytime</p>
+                            <p class="mt-6 text-sm text-on-surface-variant">No credit card required | Cancel anytime</p>
                         </div>
                     </div>
                 </section>

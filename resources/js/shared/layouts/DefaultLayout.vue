@@ -1,6 +1,7 @@
 <script setup>
 import { ShieldHalf } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
+import ThemeModeDropdown from '../components/ThemeModeDropdown.vue';
 
 const year = new Date().getFullYear();
 </script>
@@ -26,6 +27,7 @@ const year = new Date().getFullYear();
                     <a :href="route('start-account', {}, false)" class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700">
                         Sign Up
                     </a>
+                    <ThemeModeDropdown />
                 </div>
             </nav>
 
@@ -36,6 +38,7 @@ const year = new Date().getFullYear();
                 <a :href="route('start-account', {}, false)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-700">
                     Sign Up
                 </a>
+                <ThemeModeDropdown />
             </div>
         </header>
 
