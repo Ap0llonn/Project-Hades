@@ -5,6 +5,7 @@ namespace App\Features\Auth\Register\FinishProcess;
 use App\Models\User;
 use Ecotone\Modelling\Attribute\CommandHandler;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -22,7 +23,7 @@ final class RegisterUserHandler
             User::create([
                 'email' => $email,
                 'email_hashed' => hash_hmac('sha256', $email, (string) config('app.key')),
-                'password_hash' => hash_hmac('sha256', $command->password, (string) config('app.key')),
+                'password_hash' => Hash::make($command->password),
                 'first_name' => null,
                 'last_name' => null,
                 'master_key_wrapper' => $command->master_key_wrapper,

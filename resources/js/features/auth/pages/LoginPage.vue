@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import {Head, useForm, usePage} from '@inertiajs/vue3';
 import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
@@ -11,7 +11,6 @@ const loginRequest = useForm({
     email: '',
     password: '',
 });
-
 const errorMessage = computed(() => loginRequest.errors.email || loginRequest.errors.password || '');
 
 function handleSubmit() {
