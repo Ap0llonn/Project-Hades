@@ -14,6 +14,15 @@ final class LoginHandler
     #[CommandHandler]
     public function handle(LoginCommand $command): void
     {
+        $email = hash_hmac('sha256', $command->email, (string) config('app.key'));
+        $user = User::where("email_hashed", $email)->first();
+        if (!$user) {
+            throw ValidationException::withMessages(["error" => ["Email or password is incorrect"]]);
+        }
+
+        if (!Hash::check($command->password, $user->password)) {
+            throw ValidationException::withMessages(["error" => ["Email or password is incorrect"]]);
+        }
 
     }
 }
