@@ -125,7 +125,8 @@ const selectCategory = (category) => {
                     <span class="font-medium">Settings</span>
                 </button>
                 <Link
-                    :href="route('login')"
+                    :href="route('logout')"
+                    method="post"
                     class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
                 >
                     <LogOut class="h-5 w-5" />

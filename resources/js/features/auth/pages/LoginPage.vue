@@ -11,7 +11,7 @@ const loginRequest = useForm({
     email: '',
     password: '',
 });
-const errorMessage = computed(() => loginRequest.errors.email || loginRequest.errors.password || '');
+const errorMessage = computed(() => loginRequest.errors.email);
 
 function handleSubmit() {
     loginRequest.post(route('login.perform'));

@@ -31,8 +31,10 @@ Route::domain('vault.vaultguardian.test')
         require base_path('routes/Auth/email.php');
         require base_path('routes/Auth/FinishAccount/register.php');
         require base_path('routes/Auth/login.php');
+        require base_path('routes/Auth/logout.php');
 
         Route::get('/dashboard', function () {
             return Inertia::render('dashboard/pages/DashboardPage');
         })->name('dashboard')->middleware('auth');
+
     });
