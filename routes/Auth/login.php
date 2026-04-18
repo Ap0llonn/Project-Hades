@@ -8,4 +8,4 @@ Route::get('/login', function () {
     return Inertia::render('auth/pages/LoginPage');
 })->name('login');
 
-Route::post('/login', LoginController::class)->name('login.perform');
+Route::post('/login', LoginController::class)->name('login.perform')->middleware('throttle:login');
