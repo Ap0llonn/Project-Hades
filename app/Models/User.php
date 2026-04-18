@@ -25,15 +25,15 @@ class User extends Authenticatable
         'password_hash',
         'first_name',
         'last_name',
-        'master_key_wrapper',
+        'private_key_wrapper',
         'kdf_salt',
         'kdf_params',
         'email_verified',
-
+        'public_key',
     ];
 
     protected $casts = [
         'kdf_params' => 'array',
-        'master_key_wrapper' => 'array',
+        'private_key_wrapper' => 'array',
     ];
 }

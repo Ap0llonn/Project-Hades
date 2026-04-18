@@ -31,9 +31,10 @@ const finishAccountRequest = useForm({
     id: route().params.id,
     password: '',
     confirm_password: '',
-    encrypted_master_key: null,
+    encrypted_private_key: null,
     kdf_salt: '',
     kdf_params: null,
+    public_key: ''
 });
 
 function getError(key) {
@@ -43,9 +44,9 @@ function getError(key) {
 const encryptionErrorMessage = computed(
     () =>
         cryptoError.value ||
-        getError('encrypted_master_key') ||
-        getError('encrypted_master_key.ciphertext') ||
-        getError('encrypted_master_key.iv') ||
+        getError('encrypted_private_key') ||
+        getError('encrypted_private_key.ciphertext') ||
+        getError('encrypted_private_key.iv') ||
         getError('kdf_salt') ||
         getError('kdf_params') ||
         getError('kdf_params.algorithm') ||
@@ -100,19 +101,19 @@ async function handleSubmit() {
     }
 
     try {
-        const masterKey = await CryptoGenerator.generateMasterKey();
-        const wrappedMK = await CryptoEncryptor.wrapMasterKeyWithPassword(masterKey, finishAccountRequest.password);
-
-        finishAccountRequest.encrypted_master_key = {
-            ciphertext: wrappedMK.ciphertextBase64,
-            iv: wrappedMK.ivBase64,
+        const keyPair = await CryptoGenerator.generateClientKeyPair();
+        const wrappedPK = await CryptoEncryptor.wrapMasterKeyWithPassword(keyPair.privateKeyBase64, finishAccountRequest.password);
+        finishAccountRequest.public_key = keyPair.masterKeyBase64;
+        finishAccountRequest.encrypted_private_key = {
+            ciphertext: wrappedPK.ciphertextBase64,
+            iv: wrappedPK.ivBase64,
         };
-        finishAccountRequest.kdf_salt = wrappedMK.saltBase64;
+        finishAccountRequest.kdf_salt = wrappedPK.saltBase64;
         finishAccountRequest.kdf_params = {
-            algorithm: wrappedMK.kdfAlgorithm,
-            opsLimit: wrappedMK.argonOpsLimit,
-            memoryKb: wrappedMK.argonMemoryKb,
-            type: wrappedMK.argonType,
+            algorithm: wrappedPK.kdfAlgorithm,
+            opsLimit: wrappedPK.argonOpsLimit,
+            memoryKb: wrappedPK.argonMemoryKb,
+            type: wrappedPK.argonType,
         };
         finishAccountRequest.post(route('finish-account.perform'), {
             preserveScroll: true,

@@ -20,12 +20,11 @@ class RegisterUserRequest extends FormRequest
                 Password::min(12)->uncompromised(),
             ],
             'confirm_password' => ['required', 'same:password'],
-            'encrypted_master_key' => ['required', 'array'],
-            'encrypted_master_key.ciphertext' => ['required', 'string'],
-            'encrypted_master_key.iv' => ['required', 'string'],
-
+            'encrypted_private_key' => ['required', 'array'],
+            'encrypted_private_key.ciphertext' => ['required', 'string'],
+            'encrypted_private_key.iv' => ['required', 'string'],
+            'public_key' => ['required', 'string'],
             'kdf_salt' => ['required', 'string'],
-
             'kdf_params' => ['required', 'array'],
             'kdf_params.algorithm' => ['required', 'string'],
             'kdf_params.opsLimit' => ['required', 'integer'],

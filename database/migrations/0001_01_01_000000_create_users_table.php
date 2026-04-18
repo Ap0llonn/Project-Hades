@@ -18,7 +18,8 @@ return new class extends Migration
             $table->string('password_hash');
             $table->string('first_name');
             $table->string('last_name');
-            $table->json('master_key_wrapper');
+            $table->json('private_key_wrapper');
+            $table->string('public_key');
             $table->string('kdf_salt');
             $table->json('kdf_params');
             $table->boolean('email_verified')->default(false);
