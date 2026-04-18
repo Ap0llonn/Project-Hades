@@ -34,5 +34,5 @@ Route::domain('vault.vaultguardian.test')
 
         Route::get('/dashboard', function () {
             return Inertia::render('dashboard/pages/DashboardPage');
-        })->name('dashboard');
+        })->name('dashboard')->middleware('auth');
     });
