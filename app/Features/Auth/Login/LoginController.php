@@ -14,6 +14,7 @@ final class LoginController
             $request->password
         ));
 
-        return redirect()->route('dashboard');
+        $request->session()->regenerate();
+        return redirect()->intended('dashboard');
     }
 }
