@@ -3,11 +3,12 @@
 namespace App\Features\Auth\Register\StartProcess;
 
 use Ecotone\Modelling\CommandBus;
-use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 final class StartAccountController
 {
-    public function __invoke(StartAccountRequest $request, CommandBus $commandBus): RedirectResponse
+    public function __invoke(StartAccountRequest $request, CommandBus $commandBus): Response
     {
         $startAccountRequest = $request->validated();
 
@@ -15,11 +16,8 @@ final class StartAccountController
             $startAccountRequest['email'],
         ));
 
-        return redirect()
-            ->route('email.confirmation')
-            ->with([
-                'email_confirmation_sent' => true,
-                'email_confirmation_email' => $startAccountRequest['email'],
-            ]);
+        return Inertia::location(route('email.confirmation', [
+            'email' => $startAccountRequest['email'],
+        ]));
     }
 }

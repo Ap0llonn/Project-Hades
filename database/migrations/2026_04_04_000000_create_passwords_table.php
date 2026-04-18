@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('passwords', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->uuid('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->string('title');
             $table->string('username')->nullable();
             $table->text('secret_ciphertext');
@@ -30,4 +31,3 @@ return new class extends Migration
         Schema::dropIfExists('passwords');
     }
 };
-

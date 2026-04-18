@@ -55,6 +55,18 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    |----------------------------------------------------------------------
+    | Registration Timing Padding
+    |----------------------------------------------------------------------
+    |
+    | These values are used to reduce timing differences in start-account
+    | requests (for account enumeration resistance).
+    |
+    */
+    'start_account_min_delay_ms' => (int) env('START_ACCOUNT_MIN_DELAY_MS', 650),
+    'start_account_max_delay_ms' => (int) env('START_ACCOUNT_MAX_DELAY_MS', 1100),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

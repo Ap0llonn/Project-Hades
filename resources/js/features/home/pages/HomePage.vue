@@ -1,5 +1,7 @@
 <script setup>
+import { onBeforeUnmount, onMounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import Rellax from 'rellax';
 import { Eye, Fingerprint, Key, Lock, Shield, Zap } from 'lucide-vue-next';
 import DefaultLayout from '../../../shared/layouts/DefaultLayout.vue';
 
@@ -67,6 +69,30 @@ const features = [
     },
 ];
 
+const homeParallaxCenterImage = '/images/home-parallax-center.png';
+
+let parallaxScreens = null;
+
+onMounted(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
+
+    parallaxScreens = new Rellax('.home-parallax-screen', {
+        center: true,
+        round: true,
+        vertical: true,
+        horizontal: false,
+    });
+});
+
+onBeforeUnmount(() => {
+    if (parallaxScreens) {
+        parallaxScreens.destroy();
+        parallaxScreens = null;
+    }
+});
+
 </script>
 
 <template>
@@ -90,8 +116,8 @@ const features = [
             <div class="fixed bottom-0 right-1/4 h-96 w-96 rounded-full bg-blue-400 opacity-10 blur-[120px]" />
 
             <div class="relative z-10">
-                <section class="mx-auto w-full max-w-7xl px-6 py-20 text-center">
-                <h1 class="mb-6 text-5xl tracking-tight text-gray-900 sm:text-6xl md:text-8xl">
+                <section class="mx-auto w-full max-w-7xl px-6 py-20 text-center" data-aos="fade-up">
+                <h1 class="mb-6 text-5xl tracking-tight text-gray-900 sm:text-6xl md:text-8xl" data-aos="fade-up" data-aos-delay="80">
                     Your digital life,
                     <br />
                     <span class="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text font-bold text-transparent">
@@ -99,12 +125,12 @@ const features = [
                     </span>
                 </h1>
 
-                <p class="mx-auto mb-12 max-w-2xl text-lg text-gray-600">
+                <p class="mx-auto mb-12 max-w-2xl text-lg text-gray-600" data-aos="fade-up" data-aos-delay="140">
                     A password manager that combines military-grade encryption with refined design. Store, generate, and
                     autofill passwords across all your devices with confidence.
                 </p>
 
-                <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <div class="flex flex-col items-center justify-center gap-4 sm:flex-row" data-aos="fade-up" data-aos-delay="200">
                     <Link
                         href="/start-account"
                         class="rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
@@ -119,34 +145,84 @@ const features = [
                     </a>
                 </div>
 
-                <div class="mt-16 hidden items-center justify-center gap-6 text-sm text-gray-500 md:flex">
-                    <div class="flex items-center gap-2">
-                        <Shield class="h-4 w-4 text-blue-600" />
-                        <span>256-bit AES encryption</span>
+
+                </section>
+
+                <section class="mx-auto w-full max-w-7xl px-6 pb-36 pt-14 md:min-h-[94vh] md:pb-56 md:pt-24">
+                    <div class="relative mx-auto flex max-w-7xl flex-col items-center gap-6 md:block md:h-[760px]">
+                        <div class="pointer-events-none absolute inset-0 hidden md:block">
+                            <div class="absolute left-[4%] top-10 z-0 max-w-[250px] rounded-2xl border border-blue-100 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
+                                <p class="text-sm font-semibold tracking-tight text-blue-700">Biometric Unlock</p>
+                                <p class="mt-2 text-sm leading-relaxed text-gray-600">
+                                    Access your vault instantly with Face ID, Touch ID, and Windows Hello.
+                                </p>
+                            </div>
+
+                            <div class="absolute right-[6%] top-8 z-0 max-w-[260px] rounded-2xl border border-blue-100 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
+                                <p class="text-sm font-semibold tracking-tight text-blue-700">Breach Monitoring</p>
+                                <p class="mt-2 text-sm leading-relaxed text-gray-600">
+                                    Get alerts when saved credentials appear in known data breaches.
+                                </p>
+                            </div>
+
+                            <div class="absolute bottom-12 left-1/2 z-0 w-[340px] -translate-x-1/2 rounded-2xl border border-blue-100 bg-white/70 p-5 text-center shadow-sm backdrop-blur-sm">
+                                <p class="text-sm font-semibold tracking-tight text-blue-700">Instant Autofill Across Devices</p>
+                                <p class="mt-2 text-sm leading-relaxed text-gray-600">
+                                    Sign in faster on desktop and mobile with one secure tap.
+                                </p>
+                            </div>
+                        </div>
+
+                        <article
+                            class="home-parallax-screen relative z-20 h-80 w-full max-w-[440px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:absolute md:left-0 md:top-[210px] md:h-[520px] md:w-[31%] md:max-w-none"
+                            data-rellax-speed="6"
+                        >
+                            <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
+                            <div class="space-y-4">
+                                <div class="h-3 w-full rounded-full bg-blue-100/35" />
+                                <div class="h-3 w-11/12 rounded-full bg-blue-100/35" />
+                                <div class="h-40 rounded-2xl border border-blue-200/40 bg-blue-100/20 md:h-56" />
+                            </div>
+                        </article>
+
+                        <article
+                            class="home-parallax-screen relative z-10 aspect-[1325/807] w-full max-w-[560px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:left-1/2 md:top-0 md:w-[64%] md:max-w-none md:-translate-x-1/2"
+                            data-rellax-speed="2"
+                        >
+                            <img
+                                :src="homeParallaxCenterImage"
+                                alt="VaultGuardian app preview"
+                                class="h-full w-full object-cover"
+                                loading="lazy"
+                            />
+                        </article>
+
+                        <article
+                            class="home-parallax-screen relative z-20 h-80 w-full max-w-[440px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:absolute md:right-0 md:top-[150px] md:h-[560px] md:w-[31%] md:max-w-none"
+                            data-rellax-speed="6"
+                        >
+                            <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
+                            <div class="space-y-4">
+                                <div class="h-3 w-full rounded-full bg-blue-100/35" />
+                                <div class="h-3 w-10/12 rounded-full bg-blue-100/35" />
+                                <div class="h-40 rounded-2xl border border-blue-200/40 bg-blue-100/20 md:h-56" />
+                            </div>
+                        </article>
                     </div>
-                    <div class="h-4 w-px bg-gray-300" />
-                    <div class="flex items-center gap-2">
-                        <Fingerprint class="h-4 w-4 text-blue-600" />
-                        <span>Biometric authentication</span>
-                    </div>
-                    <div class="h-4 w-px bg-gray-300" />
-                    <div class="flex items-center gap-2">
-                        <Eye class="h-4 w-4 text-blue-600" />
-                        <span>Zero-knowledge architecture</span>
-                    </div>
-                </div>
                 </section>
 
                 <section id="features" class="mx-auto mt-12 w-full max-w-7xl px-6">
-                    <div class="mb-16 text-center">
+                    <div class="mb-16 text-center" data-aos="fade-up">
                         <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">Best Features</h2>
                         <p class="text-lg text-gray-600">Powerful capabilities designed for your peace of mind</p>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <article
-                            v-for="feature in bestFeatures"
+                            v-for="(feature, index) in bestFeatures"
                             :key="feature.title"
+                            data-aos="fade-up"
+                            :data-aos-delay="index * 90"
                             class="group relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-10 shadow-sm transition-all hover:scale-[1.02] hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10"
                         >
                             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/0 transition-all group-hover:from-blue-500/[0.05] group-hover:to-blue-500/[0.02]" />
@@ -169,15 +245,17 @@ const features = [
                 </section>
 
                 <section id="security" class="mx-auto w-full max-w-7xl px-6 py-32">
-                    <div class="mb-20 text-center">
+                    <div class="mb-20 text-center" data-aos="fade-up">
                         <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">Security meets simplicity</h2>
                         <p class="text-lg text-gray-600">Everything you need to protect what matters most</p>
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                         <article
-                            v-for="feature in features"
+                            v-for="(feature, index) in features"
                             :key="feature.title"
+                            data-aos="fade-up"
+                            :data-aos-delay="index * 70"
                             class="group relative cursor-pointer rounded-2xl border border-gray-200 bg-white p-8 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg"
                         >
                             <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 to-blue-500/0 transition-all group-hover:from-blue-500/[0.03] group-hover:to-blue-500/[0.01]" />
@@ -193,7 +271,7 @@ const features = [
                 </section>
 
                 <section id="pricing" class="mx-auto w-full max-w-7xl px-6 pb-28">
-                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 md:p-16">
+                    <div class="relative overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 p-10 md:p-16" data-aos="zoom-in-up">
                         <div class="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-400 opacity-20 blur-[100px]" />
                         <div class="relative text-center">
                             <h2 class="mb-6 text-4xl font-semibold tracking-tight text-gray-900 md:text-6xl">

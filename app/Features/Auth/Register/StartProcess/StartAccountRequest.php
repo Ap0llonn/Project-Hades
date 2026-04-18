@@ -19,8 +19,7 @@ final class StartAccountRequest extends FormRequest
                 'required',
                 'string',
                 'email',
-                'max:255',
-                Rule::unique(User::class, 'email'),
+                'max:255'
             ],
         ];
     }

@@ -13,7 +13,7 @@ class RegisterUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => 'string',
+            'id' => 'string|uuid',
             'password' => [
                 'required',
                 'string',

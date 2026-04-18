@@ -1,6 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { ShieldHalf } from 'lucide-vue-next';
+import { route } from 'ziggy-js';
 
 const year = new Date().getFullYear();
 </script>
@@ -9,12 +9,12 @@ const year = new Date().getFullYear();
     <div class="flex min-h-screen flex-col bg-white text-gray-900">
         <header class="relative z-30">
             <nav class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-8">
-                <Link href="/" class="flex items-center gap-3">
+                <a :href="route('home')" class="flex items-center gap-3">
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
                         <ShieldHalf class="h-5 w-5 text-white" />
                     </span>
                     <span class="text-xl font-bold tracking-tight text-gray-900">VaultGuardian</span>
-                </Link>
+                </a>
             </nav>
         </header>
 
