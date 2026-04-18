@@ -7,10 +7,13 @@ import {
     FileText,
     Home,
     Key,
+    KeyRound,
     Lock,
     LogOut,
     Settings,
+    ShieldCheck,
     Star,
+    Users,
 } from 'lucide-vue-next';
 
 defineProps({
@@ -38,6 +41,10 @@ defineProps({
         type: Number,
         required: true,
     },
+    securityAlertCount: {
+        type: Number,
+        required: true,
+    },
 });
 
 const emit = defineEmits(['update:selectedCategory']);
@@ -59,7 +66,7 @@ const selectCategory = (category) => {
                 </div>
             </div>
 
-            <nav class="flex-1 space-y-1 p-4">
+            <nav class="flex-1 space-y-1 overflow-y-auto p-4">
                 <button
                     type="button"
                     class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
@@ -117,6 +124,55 @@ const selectCategory = (category) => {
                     <FileText class="h-5 w-5" />
                     <span class="font-medium">Secure Notes</span>
                     <span class="ml-auto text-sm">{{ noteCount }}</span>
+                </button>
+
+                <div class="px-4 pb-2 pt-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Features</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
+                    :class="selectedCategory === 'security-center' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
+                    @click="selectCategory('security-center')"
+                >
+                    <ShieldCheck class="h-5 w-5" />
+                    <span class="font-medium">Security Center</span>
+                    <span class="ml-auto text-sm">{{ securityAlertCount }}</span>
+                </button>
+
+                <div class="px-4 pb-2 pt-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Actions</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
+                    :class="selectedCategory === 'password-generator' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
+                    @click="selectCategory('password-generator')"
+                >
+                    <KeyRound class="h-5 w-5" />
+                    <span class="font-medium">Password Generator</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
+                    :class="selectedCategory === 'import-export' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
+                    @click="selectCategory('import-export')"
+                >
+                    <FileText class="h-5 w-5" />
+                    <span class="font-medium">Import / Export</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
+                    :class="selectedCategory === 'password-sharing' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
+                    @click="selectCategory('password-sharing')"
+                >
+                    <Users class="h-5 w-5" />
+                    <span class="font-medium">Password Sharing</span>
                 </button>
             </nav>
 

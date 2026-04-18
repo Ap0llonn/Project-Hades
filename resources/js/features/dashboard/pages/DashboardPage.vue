@@ -24,6 +24,26 @@ const searchQuery = ref('');
 const selectedCategory = ref('all');
 const visiblePasswords = ref(new Set());
 const showAddModal = ref(false);
+const generatorLength = ref(20);
+const generatedPassword = ref('');
+
+const vaultCategories = ['all', 'favorites', 'login', 'card', 'note'];
+
+const generatePassword = (length) => {
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{};:,.?/|';
+    let output = '';
+
+    for (let index = 0; index < length; index += 1) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        output += charset[randomIndex];
+    }
+
+    return output;
+};
+
+const regenerateGeneratedPassword = () => {
+    generatedPassword.value = generatePassword(generatorLength.value);
+};
 
 const passwords = [
     {
@@ -85,7 +105,7 @@ const passwords = [
         id: '6',
         name: 'Visa Credit Card',
         username: '**** **** **** 4532',
-        password: '•••',
+        password: '***',
         url: '',
         category: 'card',
         favorite: false,
@@ -118,6 +138,12 @@ const weakPasswords = computed(() => passwords.filter((p) => p.strength === 'wea
 const securityScore = 78;
 const reusedPasswords = 2;
 const breachedPasswords = 0;
+const securityAlertCount = computed(() => weakPasswords.value + reusedPasswords + breachedPasswords);
+const isVaultCategory = computed(() => vaultCategories.includes(selectedCategory.value));
+const isSecurityCenter = computed(() => selectedCategory.value === 'security-center');
+const isPasswordGenerator = computed(() => selectedCategory.value === 'password-generator');
+const isImportExport = computed(() => selectedCategory.value === 'import-export');
+const isPasswordSharing = computed(() => selectedCategory.value === 'password-sharing');
 
 const categoryTitle = computed(() => {
     if (selectedCategory.value === 'all') {
@@ -131,6 +157,18 @@ const categoryTitle = computed(() => {
     }
     if (selectedCategory.value === 'card') {
         return 'Cards';
+    }
+    if (selectedCategory.value === 'security-center') {
+        return 'Security Center';
+    }
+    if (selectedCategory.value === 'password-generator') {
+        return 'Password Generator';
+    }
+    if (selectedCategory.value === 'import-export') {
+        return 'Import / Export';
+    }
+    if (selectedCategory.value === 'password-sharing') {
+        return 'Password Sharing';
     }
 
     return 'Secure Notes';
@@ -153,6 +191,8 @@ const copyToClipboard = async (text) => {
         // Silent failure for unsupported clipboard contexts.
     }
 };
+
+regenerateGeneratedPassword();
 </script>
 
 <template>
@@ -165,6 +205,7 @@ const copyToClipboard = async (text) => {
         :login-count="loginCount"
         :card-count="cardCount"
         :note-count="noteCount"
+        :security-alert-count="securityAlertCount"
         @update:selected-category="selectedCategory = $event"
     >
         <header class="sticky top-0 z-10 border-b border-outline-variant bg-surface">
@@ -197,7 +238,7 @@ const copyToClipboard = async (text) => {
             </header>
 
             <div class="p-6 md:p-8">
-                <section class="mb-8">
+                <section v-if="isVaultCategory || isSecurityCenter" class="mb-8">
                     <div class="rounded-2xl border border-outline-variant bg-gradient-to-br from-surface-container to-surface-container-high p-8">
                         <div class="mb-6 flex items-start justify-between">
                             <div>
@@ -206,7 +247,7 @@ const copyToClipboard = async (text) => {
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="flex h-20 w-20 items-center justify-center rounded-full border-4 border-primary bg-surface">
-                                    <span class="text-2xl font-bold text-blue-600">{{ securityScore }}</span>
+                                    <span class="text-2xl font-bold text-primary">{{ securityScore }}</span>
                                 </div>
                             </div>
                         </div>
@@ -215,7 +256,7 @@ const copyToClipboard = async (text) => {
                             <div class="rounded-xl border border-outline-variant bg-surface p-5">
                                 <div class="mb-2 flex items-center gap-3">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container">
-                                        <AlertCircle class="h-5 w-5 text-red-600" />
+                                        <AlertCircle class="h-5 w-5 text-on-surface" />
                                     </div>
                                     <div>
                                         <p class="text-2xl font-bold text-on-surface">{{ weakPasswords }}</p>
@@ -239,7 +280,7 @@ const copyToClipboard = async (text) => {
                             <div class="rounded-xl border border-outline-variant bg-surface p-5">
                                 <div class="mb-2 flex items-center gap-3">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-tertiary-fixed">
-                                        <Shield class="h-5 w-5 text-green-600" />
+                                        <Shield class="h-5 w-5 text-primary" />
                                     </div>
                                     <div>
                                         <p class="text-2xl font-bold text-on-surface">{{ breachedPasswords }}</p>
@@ -251,10 +292,126 @@ const copyToClipboard = async (text) => {
                     </div>
                 </section>
 
-                <section class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <button class="group flex items-center gap-4 rounded-xl border border-outline-variant bg-surface p-6 text-left transition-all hover:border-primary">
+                <section v-if="isSecurityCenter" class="mb-8 overflow-hidden rounded-2xl border border-outline-variant bg-surface">
+                    <div class="border-b border-outline-variant p-6">
+                        <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ categoryTitle }}</h2>
+                        <p class="mt-1 text-sm text-on-surface-variant">Actionable recommendations to improve your vault security</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-sm font-medium text-on-surface-variant">Weak Passwords</p>
+                            <p class="mt-2 text-3xl font-semibold text-on-surface">{{ weakPasswords }}</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">Update weak credentials with strong, unique passwords.</p>
+                        </article>
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-sm font-medium text-on-surface-variant">Reused Passwords</p>
+                            <p class="mt-2 text-3xl font-semibold text-on-surface">{{ reusedPasswords }}</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">Reduce risk by replacing reused credentials.</p>
+                        </article>
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-sm font-medium text-on-surface-variant">Breached Accounts</p>
+                            <p class="mt-2 text-3xl font-semibold text-on-surface">{{ breachedPasswords }}</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">No alerts now. Keep breach monitoring enabled.</p>
+                        </article>
+                    </div>
+                </section>
+
+                <section v-if="isPasswordGenerator" class="mb-8 overflow-hidden rounded-2xl border border-outline-variant bg-surface">
+                    <div class="border-b border-outline-variant p-6">
+                        <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ categoryTitle }}</h2>
+                        <p class="mt-1 text-sm text-on-surface-variant">Generate high-entropy passwords for your accounts</p>
+                    </div>
+                    <div class="space-y-6 p-6">
+                        <div class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <label for="generatorLength" class="text-sm font-medium text-on-surface-variant">
+                                    Length: <span class="font-semibold text-on-surface">{{ generatorLength }}</span>
+                                </label>
+                                <button
+                                    type="button"
+                                    class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                                    @click="regenerateGeneratedPassword"
+                                >
+                                    Generate New
+                                </button>
+                            </div>
+                            <input
+                                id="generatorLength"
+                                v-model.number="generatorLength"
+                                type="range"
+                                min="12"
+                                max="40"
+                                class="w-full accent-primary"
+                                @input="regenerateGeneratedPassword"
+                            >
+                            <div class="mt-4 rounded-lg border border-outline-variant bg-surface px-4 py-3">
+                                <p class="text-xs uppercase tracking-wider text-on-surface-variant">Generated Password</p>
+                                <p class="mt-2 break-all font-mono text-on-surface">{{ generatedPassword }}</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            class="rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
+                            @click="copyToClipboard(generatedPassword)"
+                        >
+                            Copy Password
+                        </button>
+                    </div>
+                </section>
+
+                <section v-if="isImportExport" class="mb-8 overflow-hidden rounded-2xl border border-outline-variant bg-surface">
+                    <div class="border-b border-outline-variant p-6">
+                        <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ categoryTitle }}</h2>
+                        <p class="mt-1 text-sm text-on-surface-variant">Move your vault data securely between formats</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-lg font-semibold text-on-surface">Import</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">Supported formats: CSV, JSON, browser exports.</p>
+                            <button type="button" class="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
+                                Start Import
+                            </button>
+                        </article>
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-lg font-semibold text-on-surface">Export</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">Create encrypted backups for secure archival.</p>
+                            <button type="button" class="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
+                                Create Export
+                            </button>
+                        </article>
+                    </div>
+                </section>
+
+                <section v-if="isPasswordSharing" class="mb-8 overflow-hidden rounded-2xl border border-outline-variant bg-surface">
+                    <div class="border-b border-outline-variant p-6">
+                        <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ categoryTitle }}</h2>
+                        <p class="mt-1 text-sm text-on-surface-variant">Share credentials securely with trusted people</p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-lg font-semibold text-on-surface">Shared Vault Access</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">Grant role-based access without exposing plain passwords.</p>
+                            <button type="button" class="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
+                                Invite Member
+                            </button>
+                        </article>
+                        <article class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+                            <p class="text-lg font-semibold text-on-surface">One-Time Secure Link</p>
+                            <p class="mt-2 text-sm text-on-surface-variant">Send temporary links that automatically expire.</p>
+                            <button type="button" class="mt-4 rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface">
+                                Create Link
+                            </button>
+                        </article>
+                    </div>
+                </section>
+
+                <section v-if="isVaultCategory" class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <button
+                        class="group flex items-center gap-4 rounded-xl border border-outline-variant bg-surface p-6 text-left transition-all hover:border-primary"
+                        @click="selectedCategory = 'password-generator'"
+                    >
                         <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-secondary-container to-tertiary-fixed transition-transform group-hover:scale-110">
-                            <Key class="h-6 w-6 text-blue-600" />
+                            <Key class="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <p class="mb-1 font-semibold text-on-surface">Generate Password</p>
@@ -262,28 +419,34 @@ const copyToClipboard = async (text) => {
                         </div>
                     </button>
 
-                    <button class="group flex items-center gap-4 rounded-xl border border-outline-variant bg-surface p-6 text-left transition-all hover:border-primary">
+                    <button
+                        class="group flex items-center gap-4 rounded-xl border border-outline-variant bg-surface p-6 text-left transition-all hover:border-primary"
+                        @click="selectedCategory = 'import-export'"
+                    >
                         <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-secondary-container to-tertiary-fixed transition-transform group-hover:scale-110">
-                            <Zap class="h-6 w-6 text-indigo-600" />
+                            <Zap class="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <p class="mb-1 font-semibold text-on-surface">Import Passwords</p>
-                            <p class="text-sm text-on-surface-variant">From browser or file</p>
+                            <p class="mb-1 font-semibold text-on-surface">Import / Export</p>
+                            <p class="text-sm text-on-surface-variant">Move your vault data securely</p>
                         </div>
                     </button>
 
-                    <button class="group flex items-center gap-4 rounded-xl border border-outline-variant bg-surface p-6 text-left transition-all hover:border-primary">
+                    <button
+                        class="group flex items-center gap-4 rounded-xl border border-outline-variant bg-surface p-6 text-left transition-all hover:border-primary"
+                        @click="selectedCategory = 'password-sharing'"
+                    >
                         <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-secondary-container to-tertiary-fixed transition-transform group-hover:scale-110">
-                            <Users class="h-6 w-6 text-green-600" />
+                            <Users class="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <p class="mb-1 font-semibold text-on-surface">Share Vault</p>
+                            <p class="mb-1 font-semibold text-on-surface">Share Passwords</p>
                             <p class="text-sm text-on-surface-variant">With family or team</p>
                         </div>
                     </button>
                 </section>
 
-                <section class="overflow-hidden rounded-2xl border border-outline-variant bg-surface">
+                <section v-if="isVaultCategory" class="overflow-hidden rounded-2xl border border-outline-variant bg-surface">
                     <div class="border-b border-outline-variant p-6">
                         <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ categoryTitle }}</h2>
                         <p class="mt-1 text-sm text-on-surface-variant">{{ filteredPasswords.length }} items</p>
@@ -322,7 +485,7 @@ const copyToClipboard = async (text) => {
                                         <div class="flex items-center gap-4 text-sm text-on-surface-variant">
                                             <span class="truncate">{{ pwd.username }}</span>
                                             <template v-if="pwd.url">
-                                                <span class="text-outline-variant">•</span>
+                                                <span class="text-outline-variant">|</span>
                                                 <span class="truncate">{{ pwd.url }}</span>
                                             </template>
                                         </div>
@@ -371,7 +534,7 @@ const copyToClipboard = async (text) => {
                     </div>
                 </section>
 
-                <section class="mt-8 overflow-hidden rounded-2xl border border-outline-variant bg-surface">
+                <section v-if="isVaultCategory" class="mt-8 overflow-hidden rounded-2xl border border-outline-variant bg-surface">
                     <div class="border-b border-outline-variant p-6">
                         <h2 class="text-xl font-semibold tracking-tight text-on-surface">Recent Activity</h2>
                     </div>
