@@ -1,5 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
 import ThemeModeDropdown from '../../../shared/components/ThemeModeDropdown.vue';
 import {
@@ -48,8 +49,15 @@ defineProps({
 });
 
 const emit = defineEmits(['update:selectedCategory']);
+const page = usePage();
+const isSettingsPage = computed(() => page.url.startsWith('/settings'));
 
 const selectCategory = (category) => {
+    if (isSettingsPage.value) {
+        router.visit(route('dashboard'));
+        return;
+    }
+
     emit('update:selectedCategory', category);
 };
 </script>
@@ -180,10 +188,14 @@ const selectCategory = (category) => {
                 <div class="pb-2">
                     <ThemeModeDropdown full-width />
                 </div>
-                <button type="button" class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface">
+                <Link
+                    :href="route('settings')"
+                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-colors"
+                    :class="isSettingsPage ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
+                >
                     <Settings class="h-5 w-5" />
                     <span class="font-medium">Settings</span>
-                </button>
+                </Link>
                 <Link
                     :href="route('logout')"
                     method="post"
