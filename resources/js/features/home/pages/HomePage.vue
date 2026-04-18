@@ -69,7 +69,9 @@ const features = [
     },
 ];
 
+const homeParallaxLeftImage = '/images/home-parallax-left.png';
 const homeParallaxCenterImage = '/images/home-parallax-center.png';
+const homeParallaxRightImage = '/images/home-parallax-right.png';
 
 let parallaxScreens = null;
 
@@ -150,39 +152,16 @@ onBeforeUnmount(() => {
 
                 <section class="mx-auto w-full max-w-7xl px-6 pb-36 pt-14 md:min-h-[94vh] md:pb-56 md:pt-24">
                     <div class="relative mx-auto flex max-w-7xl flex-col items-center gap-6 md:block md:h-[760px]">
-                        <div class="pointer-events-none absolute inset-0 hidden md:block">
-                            <div class="absolute left-[4%] top-10 z-0 max-w-[250px] rounded-2xl border border-blue-100 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
-                                <p class="text-sm font-semibold tracking-tight text-blue-700">Biometric Unlock</p>
-                                <p class="mt-2 text-sm leading-relaxed text-gray-600">
-                                    Access your vault instantly with Face ID, Touch ID, and Windows Hello.
-                                </p>
-                            </div>
-
-                            <div class="absolute right-[6%] top-8 z-0 max-w-[260px] rounded-2xl border border-blue-100 bg-white/70 p-5 shadow-sm backdrop-blur-sm">
-                                <p class="text-sm font-semibold tracking-tight text-blue-700">Breach Monitoring</p>
-                                <p class="mt-2 text-sm leading-relaxed text-gray-600">
-                                    Get alerts when saved credentials appear in known data breaches.
-                                </p>
-                            </div>
-
-                            <div class="absolute bottom-12 left-1/2 z-0 w-[340px] -translate-x-1/2 rounded-2xl border border-blue-100 bg-white/70 p-5 text-center shadow-sm backdrop-blur-sm">
-                                <p class="text-sm font-semibold tracking-tight text-blue-700">Instant Autofill Across Devices</p>
-                                <p class="mt-2 text-sm leading-relaxed text-gray-600">
-                                    Sign in faster on desktop and mobile with one secure tap.
-                                </p>
-                            </div>
-                        </div>
-
                         <article
-                            class="home-parallax-screen relative z-20 h-80 w-full max-w-[440px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:absolute md:left-0 md:top-[210px] md:h-[520px] md:w-[31%] md:max-w-none"
+                            class="home-parallax-screen relative z-20 aspect-[381/829] w-full max-w-[260px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:left-0 md:top-[210px] md:h-[520px] md:w-[239px] md:max-w-none"
                             data-rellax-speed="6"
                         >
-                            <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
-                            <div class="space-y-4">
-                                <div class="h-3 w-full rounded-full bg-blue-100/35" />
-                                <div class="h-3 w-11/12 rounded-full bg-blue-100/35" />
-                                <div class="h-40 rounded-2xl border border-blue-200/40 bg-blue-100/20 md:h-56" />
-                            </div>
+                            <img
+                                :src="homeParallaxLeftImage"
+                                alt="VaultGuardian biometric security preview"
+                                class="h-full w-full object-cover"
+                                loading="lazy"
+                            />
                         </article>
 
                         <article
@@ -198,15 +177,15 @@ onBeforeUnmount(() => {
                         </article>
 
                         <article
-                            class="home-parallax-screen relative z-20 h-80 w-full max-w-[440px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-6 shadow-2xl shadow-blue-900/30 will-change-transform md:absolute md:right-0 md:top-[150px] md:h-[560px] md:w-[31%] md:max-w-none"
+                            class="home-parallax-screen relative z-20 aspect-[254/548] w-full max-w-[260px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:right-0 md:top-[150px] md:h-[560px] md:w-[260px] md:max-w-none"
                             data-rellax-speed="6"
                         >
-                            <div class="mb-6 h-3 w-36 rounded-full bg-blue-200/70" />
-                            <div class="space-y-4">
-                                <div class="h-3 w-full rounded-full bg-blue-100/35" />
-                                <div class="h-3 w-10/12 rounded-full bg-blue-100/35" />
-                                <div class="h-40 rounded-2xl border border-blue-200/40 bg-blue-100/20 md:h-56" />
-                            </div>
+                            <img
+                                :src="homeParallaxRightImage"
+                                alt="VaultGuardian password management preview"
+                                class="h-full w-full object-cover"
+                                loading="lazy"
+                            />
                         </article>
                     </div>
                 </section>
