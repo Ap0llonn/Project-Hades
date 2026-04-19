@@ -14,7 +14,7 @@ import {
     User,
 } from 'lucide-vue-next';
 import DashboardLayout from '../layouts/DashboardLayout.vue';
-import { useToast } from '../../../shared/toast';
+import { useModal } from '../../../shared/modal';
 
 const selectedCategory = ref('all');
 const activeSection = ref('profile');
@@ -117,11 +117,14 @@ const activeSectionConfig = computed(() =>
     settingsSections.find((section) => section.id === activeSection.value) ?? settingsSections[0],
 );
 
-const toast = useToast();
+const modal = useModal();
 
 const handleSaveChanges = () => {
-    toast.confirmation('Your settings have been saved.', {
+    modal.confirmation({
         title: 'Settings updated',
+        message: 'Your settings have been saved.',
+        confirmLabel: 'Close',
+        cancelLabel: null,
     });
 };
 </script>

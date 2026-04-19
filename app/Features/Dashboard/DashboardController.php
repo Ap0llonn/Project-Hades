@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Features\dashboard;
+namespace App\Features\Dashboard;
 
 class DashboardController
 {

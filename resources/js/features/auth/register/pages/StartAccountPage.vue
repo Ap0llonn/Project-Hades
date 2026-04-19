@@ -3,7 +3,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowRight, Eye, Fingerprint, Mail, Shield, Star } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { route } from 'ziggy-js';
-import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
+import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
 const page = usePage();
 

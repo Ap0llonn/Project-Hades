@@ -1,7 +1,7 @@
 <script setup>
 import { Fingerprint, LockKeyhole, ShieldCheck } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
-import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
+import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
 defineProps({
     title: {

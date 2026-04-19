@@ -26,7 +26,7 @@ final class FinishAccountPageController
             return redirect()->route('start-account');
         }
 
-        return Inertia::render('auth/pages/FinishAccountPage', [
+        return Inertia::render('auth/register/pages/FinishAccountPage', [
             'email' => $pendingUser->email,
         ]);
     }

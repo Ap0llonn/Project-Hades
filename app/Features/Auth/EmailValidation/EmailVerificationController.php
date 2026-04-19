@@ -19,7 +19,7 @@ class EmailVerificationController
             $email = '';
         }
 
-        return Inertia::render('auth/pages/EmailConfirmationPage', [
+        return Inertia::render('auth/email/pages/EmailConfirmationPage', [
             'email' => $email,
         ]);
     }

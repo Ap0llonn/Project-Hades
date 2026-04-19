@@ -5,7 +5,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { createApp, Fragment, h } from 'vue';
-import ToastViewport from './shared/components/ToastViewport.vue';
+import ModalHost from './shared/components/ModalHost.vue';
 
 const THEME_STORAGE_KEY = 'pm-theme';
 const THEME_TRANSITION_CLASS = 'theme-transition';
@@ -73,7 +73,7 @@ createInertiaApp({
             render: () =>
                 h(Fragment, null, [
                     h(App, props),
-                    h(ToastViewport),
+                    h(ModalHost),
                 ]),
         })
             .use(plugin)

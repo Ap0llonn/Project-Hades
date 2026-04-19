@@ -3,8 +3,8 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import { CheckCircle2, Circle, Eye, EyeOff, Lock, Shield } from 'lucide-vue-next';
-import { CryptoGenerator } from '../../../shared/utils';
-import CryptoEncryptor from '../../../shared/utils/crypto/CryptoEncryptor';
+import { CryptoGenerator } from '../../../../shared/utils';
+import CryptoEncryptor from '../../../../shared/utils/crypto/CryptoEncryptor';
 import {
     getPasswordEntropy,
     getPasswordMeterClass,
@@ -12,7 +12,7 @@ import {
     MIN_PASSWORD_LENGTH,
     MIN_ZXCVBN_SCORE,
 } from '../utils/passwordValidation';
-import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
+import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
 const props = defineProps({
     email: {

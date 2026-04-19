@@ -3,7 +3,7 @@ import {Head, useForm, usePage} from '@inertiajs/vue3';
 import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
-import AuthLayout from '../../../shared/layouts/AuthLayout.vue';
+import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
 const showPassword = ref(false);
 
