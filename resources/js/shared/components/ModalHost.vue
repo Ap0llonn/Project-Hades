@@ -134,6 +134,13 @@ const isVisible = computed(() => activeModal.value !== null);
                     </header>
 
                     <div v-if="activeModal.type === 'form' && activeModal.form" class="space-y-4 px-6 pb-3 pt-1">
+                        <div
+                            v-if="activeModal.qrSvg"
+                            class="rounded-xl border border-outline-variant bg-surface-container-low p-3"
+                        >
+                            <div class="mx-auto w-fit" v-html="activeModal.qrSvg" />
+                        </div>
+
                         <label
                             v-for="field in activeModal.form.fields"
                             :key="`${activeModal.id}-${field.name}`"

@@ -2,10 +2,12 @@
 
 namespace App\Features\Dashboard;
 
+use Inertia\Inertia;
+
 class DashboardController
 {
-    public function index()
+    public function __invoke()
     {
-
+        return Inertia::render('dashboard/pages/DashboardPage');
     }
 }

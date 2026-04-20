@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('mfa_methods', function (Blueprint $table) {
             $table->foreignUuid('user_id')->primary()->constrained()->cascadeOnDelete();
-            $table->boolean('email')->default(true);
-            $table->boolean('totp')->default(false);
+            $table->boolean('totp_enabled')->default(false);
+            $table->string('totp_secret')->nullable();
             $table->json('recovery_codes')->nullable();
             $table->boolean('recovery_codes_show')->default(false);
+            $table->boolean('mfa_activated')->default(false);
             $table->timestamps();
         });
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Features\Auth\MFA\RecoveryTokens;
+namespace App\Features\Auth\MFA\RecoveryCodes\Store;
 
 final readonly class RecoveryCodeCommand
 {

@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Features\Auth\MFA\RecoveryTokens;
+namespace App\Features\Auth\MFA\RecoveryCodes\Store;
 
 use Ecotone\Modelling\CommandBus;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +15,7 @@ class RecoveryCodeController
         return Inertia::render('Auth/RecoveryCode/Page');
     }
 
-    public function initCodes(RecoveryCodeRequest $request, CommandBus $commandBus): RedirectResponse
+    public function store(RecoveryCodeRequest $request, CommandBus $commandBus): RedirectResponse
     {
         Log::info('im here');
         $payload = $request->validated();

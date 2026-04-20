@@ -1,27 +1,21 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
-import { AlertCircle, ArrowLeft, ChevronDown, KeyRound, Mail, ShieldCheck, Smartphone } from 'lucide-vue-next';
+import { Head, useForm } from '@inertiajs/vue3';
+import { AlertCircle, ArrowLeft, ChevronDown, KeyRound, ShieldCheck, Smartphone } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
 const method = ref('app');
 const appCode = ref('');
-const emailCode = ref('');
 const recoveryCode = ref('');
 const isRecoveryMenuOpen = ref(false);
 const error = ref('');
 
 const isAppCodeComplete = computed(() => appCode.value.length === 6);
-const isEmailCodeComplete = computed(() => emailCode.value.length === 6);
 const canSubmitRecoveryCode = computed(() => recoveryCode.value.trim().length > 0);
 const canSubmit = computed(() => {
     if (method.value === 'app') {
         return isAppCodeComplete.value;
-    }
-
-    if (method.value === 'email') {
-        return isEmailCodeComplete.value;
     }
 
     return canSubmitRecoveryCode.value;
@@ -32,21 +26,11 @@ const titleText = computed(() => {
         return 'Enter one of your recovery codes';
     }
 
-    return method.value === 'app'
-        ? 'Enter the code from your authenticator app'
-        : 'Enter the code sent to your email';
+    return 'Enter the code from your authenticator app';
 });
 
 const activeCode = computed(() => {
-    if (method.value === 'app') {
-        return appCode.value;
-    }
-
-    if (method.value === 'email') {
-        return emailCode.value;
-    }
-
-    return recoveryCode.value;
+    return method.value === 'recovery' ? recoveryCode.value : appCode.value;
 });
 
 const inputPlaceholder = computed(() => (method.value === 'recovery' ? 'XXXX-XXXX-XXXX' : '000000'));
@@ -55,7 +39,6 @@ const inputMaxLength = computed(() => (method.value === 'recovery' ? 14 : 6));
 const switchMethod = (nextMethod) => {
     method.value = nextMethod;
     appCode.value = '';
-    emailCode.value = '';
     recoveryCode.value = '';
     isRecoveryMenuOpen.value = false;
     error.value = '';
@@ -73,17 +56,28 @@ const handleCodeInput = (event) => {
         return;
     }
 
-    const sanitized = rawValue.replace(/\D/g, '').slice(0, 6);
-    if (method.value === 'app') {
-        appCode.value = sanitized;
-    } else {
-        emailCode.value = sanitized;
-    }
+    appCode.value = rawValue.replace(/\D/g, '').slice(0, 6);
 };
 
 const selectRecoveryMethod = () => {
     switchMethod('recovery');
 };
+
+const totpRequest = useForm({
+    code: '',
+});
+
+function verifyCode() {
+    error.value = '';
+    totpRequest.code = activeCode.value.trim();
+
+    totpRequest.post(route('mfa.totp.verify'), {
+        preserveScroll: true,
+        onError: (errors) => {
+            error.value = errors.code ?? 'Unable to verify code.';
+        },
+    });
+}
 </script>
 
 <template>
@@ -129,7 +123,7 @@ const selectRecoveryMethod = () => {
                         </p>
                     </div>
 
-                    <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="mb-6 grid grid-cols-1 gap-3">
                         <button
                             type="button"
                             class="rounded-xl border px-4 py-3 text-left transition-colors"
@@ -150,52 +144,24 @@ const selectRecoveryMethod = () => {
                             </span>
                         </button>
 
-                        <button
-                            type="button"
-                            class="rounded-xl border px-4 py-3 text-left transition-colors"
-                            :class="method === 'email'
-                                ? 'border-blue-500 bg-blue-50 text-blue-800 dark:!border-blue-400 dark:!bg-slate-800 dark:!text-blue-100'
-                                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:border-blue-400'"
-                            @click="switchMethod('email')"
-                        >
-                            <span class="mb-1 flex items-center gap-2 text-sm" style="font-weight: 600;">
-                                <Mail class="h-4 w-4" />
-                                Email
-                            </span>
-                            <span
-                                class="block text-xs"
-                                :class="method === 'email' ? 'text-blue-700 dark:!text-blue-200' : 'text-gray-600 dark:text-slate-300'"
-                            >
-                                Use the code sent to your email.
-                            </span>
-                        </button>
                     </div>
 
                     <div v-if="method !== 'recovery'" class="mb-6 rounded-xl bg-gray-50 p-4">
                         <div class="flex items-center gap-3">
                             <div
                                 class="flex h-10 w-10 items-center justify-center rounded-lg"
-                                :class="method === 'app' ? 'bg-gradient-to-br from-indigo-100 to-indigo-50' : 'bg-gradient-to-br from-blue-100 to-blue-50'"
+                                :class="'bg-gradient-to-br from-indigo-100 to-indigo-50'"
                             >
-                                <Smartphone v-if="method === 'app'" class="h-5 w-5 text-indigo-600" />
-                                <Mail v-else class="h-5 w-5 text-blue-600" />
+                                <Smartphone class="h-5 w-5 text-indigo-600" />
                             </div>
                             <div class="flex-1">
                                 <p class="text-sm text-gray-900" style="font-weight: 600;">
-                                    {{ method === 'app' ? 'Authenticator App' : 'Email Verification' }}
+                                    Authenticator App
                                 </p>
                                 <p class="text-xs text-gray-600">
-                                    {{ method === 'app' ? 'Open your app to view the code' : 'Check your inbox for the latest code' }}
+                                    Open your app to view the code
                                 </p>
                             </div>
-                            <button
-                                v-if="method === 'email'"
-                                type="button"
-                                class="text-xs text-blue-600 hover:underline"
-                                style="font-weight: 500;"
-                            >
-                                Resend
-                            </button>
                         </div>
                     </div>
 
@@ -270,10 +236,11 @@ const selectRecoveryMethod = () => {
                         <button
                             type="button"
                             :disabled="!canSubmit"
-                            class="flex-1 rounded-xl bg-blue-600 px-6 py-4 text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-700 dark:disabled:bg-slate-700 dark:disabled:text-slate-300"
+                            class="flex-1 rounded-xl cursor-pointer bg-blue-600 px-6 py-4 text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-700 dark:disabled:bg-slate-700 dark:disabled:text-slate-300"
                             style="font-weight: 600;"
+                            @click="verifyCode"
                         >
-                            Verify
+                            {{ totpRequest.processing ? 'Verifying...' : 'Verify' }}
                         </button>
                     </div>
 

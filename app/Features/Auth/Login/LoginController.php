@@ -17,14 +17,13 @@ final class LoginController
         ));
 
         $user = Auth::user();
-        $userMfa = MfaMethods::find($user->id);
-        if (!$userMfa->recovery_codes_show) {
-            $userMfa->update([
-                'recovery_codes_show' => true,
-            ]);
-            return redirect()->route('mfa.recovery-codes');
-        }
+        $userMfa = $user->mfa;
+
         $request->session()->regenerate();
+        if ($userMfa->mfa_activated){
+            return redirect()->route('mfa');
+        }
+
         return redirect()->intended('dashboard');
     }
 }

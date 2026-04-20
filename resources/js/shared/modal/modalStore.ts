@@ -57,6 +57,7 @@ const pushModal = (
         type,
         title: options.title ?? getDefaultTitle(type),
         message: options.message ?? '',
+        qrSvg: options.qrSvg,
         confirmLabel: options.confirmLabel ?? getDefaultConfirmLabel(type),
         cancelLabel: options.cancelLabel === undefined ? 'Cancel' : options.cancelLabel,
         disableBackdropClose: options.disableBackdropClose ?? false,

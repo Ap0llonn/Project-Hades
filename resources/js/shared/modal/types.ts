@@ -30,6 +30,7 @@ export type ModalSubmitHandler = (
 export interface BaseModalOptions {
     title?: string;
     message?: string;
+    qrSvg?: string;
     confirmLabel?: string;
     cancelLabel?: string | null;
     disableBackdropClose?: boolean;
@@ -56,6 +57,7 @@ export interface ModalRecord {
     type: ModalType;
     title: string;
     message: string;
+    qrSvg?: string;
     confirmLabel: string;
     cancelLabel: string | null;
     disableBackdropClose: boolean;

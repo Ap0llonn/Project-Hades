@@ -48,9 +48,11 @@ class User extends Authenticatable
         static::created(function ($user) {
             $user->mfa()->create([
                 'user_id' => $user->id,
-                'email' => true,
-                'totp' => false,
+                'totp_enabled' => false,
+                'totp_secret' => null,
                 'recovery_codes' => [],
+                'recovery_codes_show' => false,
+                'mfa_activated' => false,
             ]);
         });
     }
