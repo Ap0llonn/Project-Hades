@@ -1,8 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import {Head, usePage} from '@inertiajs/vue3';
 import { Bell, ChevronRight, CreditCard, Database, Laptop, Shield, User } from 'lucide-vue-next';
-import { route } from 'ziggy-js';
 import DashboardLayout from '../../layouts/DashboardLayout.vue';
 import SettingsBillingSection from '../components/SettingsBillingSection.vue';
 import SettingsDevicesSection from '../components/SettingsDevicesSection.vue';
@@ -14,11 +13,13 @@ import { useModal } from '../../../../shared/modal/index.ts';
 
 const selectedCategory = ref('all');
 const activeSection = ref('profile');
-const twoFactorEnabled = ref(false);
-const mfaEmailEnabled = ref(true);
-const mfaTotpEnabled = ref(false);
-const passkeyEnabled = ref(false);
-const biometricEnabled = ref(true);
+
+const settingProps = defineProps({
+    security: {
+        type: Object,
+        required: true
+    }
+})
 
 const settingsSections = [
     {
@@ -59,123 +60,11 @@ const settingsSections = [
     },
 ];
 
-const oauthProviders = [
-    {
-        name: 'Google',
-        linked: true,
-        account: 'sam.doe@gmail.com',
-    },
-    {
-        name: 'GitHub',
-        linked: false,
-        account: '',
-    },
-    {
-        name: 'Microsoft',
-        linked: false,
-        account: '',
-    },
-];
-
-const passkeys = [
-    {
-        name: 'MacBook Pro',
-        createdAt: 'April 8, 2026',
-    },
-    {
-        name: 'iPhone 16',
-        createdAt: 'April 12, 2026',
-    },
-];
-
-const activeSessions = [
-    {
-        device: 'Windows 11 | Chrome',
-        location: 'Montreal, CA',
-        lastSeen: 'Active now',
-        current: true,
-    },
-    {
-        device: 'iPhone 16 | iOS App',
-        location: 'Montreal, CA',
-        lastSeen: '2 hours ago',
-        current: false,
-    },
-    {
-        device: 'MacBook Pro | Safari',
-        location: 'Quebec, CA',
-        lastSeen: 'Yesterday',
-        current: false,
-    },
-];
-
 const activeSectionConfig = computed(() =>
     settingsSections.find((section) => section.id === activeSection.value) ?? settingsSections[0],
 );
 
 const modal = useModal();
-
-const openTotpSetupModal = (payload) => {
-    modal.form({
-        title: 'Set up authenticator app',
-        message: 'Scan this QR code, then enter the 6-digit code from your authenticator app.',
-        qrSvg: payload.qrSvg,
-        confirmLabel: 'Activate',
-        cancelLabel: 'Cancel',
-        fields: [
-            {
-                name: 'setupKey',
-                label: 'Setup key',
-                required: true,
-                initialValue: payload.setupKey ?? '',
-            },
-            {
-                name: 'verificationCode',
-                label: 'Verification code',
-                placeholder: '123456',
-                autocomplete: 'one-time-code',
-                required: true,
-            },
-        ],
-        onSubmit: async (values) => {
-            const verificationCode = values.verificationCode.trim();
-
-            if (!/^\d{6}$/.test(verificationCode)) {
-                throw new Error('Verification code must be exactly 6 digits.');
-            }
-
-            await new Promise((resolve, reject) => {
-                router.post(
-                    route('mfa.totp.verify'),
-                    {
-                        code: verificationCode,
-                    },
-                    {
-                        preserveScroll: true,
-                        preserveState: true,
-                        onSuccess: () => resolve(),
-                        onError: (errors) => {
-                            reject(new Error(errors.code ?? 'Unable to verify authenticator code.'));
-                        },
-                        onCancel: () => {
-                            reject(new Error('TOTP verification was cancelled.'));
-                        },
-                    },
-                );
-            });
-
-            mfaTotpEnabled.value = true;
-            twoFactorEnabled.value = true;
-
-            modal.confirmation({
-                title: 'Authenticator app activated',
-                message: 'TOTP is now configured for your account.',
-                confirmLabel: 'Close',
-                cancelLabel: null,
-            });
-        },
-    });
-};
 
 const handleSaveChanges = () => {
     modal.confirmation({
@@ -183,61 +72,6 @@ const handleSaveChanges = () => {
         message: 'Your settings have been saved.',
         confirmLabel: 'Close',
         cancelLabel: null,
-    });
-};
-
-const toggleTwoFactor = () => {
-    twoFactorEnabled.value = !twoFactorEnabled.value;
-};
-
-const toggleMfaEmail = () => {
-    mfaEmailEnabled.value = !mfaEmailEnabled.value;
-};
-
-const togglePasskey = () => {
-    passkeyEnabled.value = !passkeyEnabled.value;
-};
-
-const toggleBiometric = () => {
-    biometricEnabled.value = !biometricEnabled.value;
-};
-
-const handleTotpAction = () => {
-    if (mfaTotpEnabled.value) {
-        modal.confirmation({
-            title: 'Edit authenticator app',
-            message: 'TOTP edit flow is not wired yet. Keep your current setup for now.',
-            confirmLabel: 'Close',
-            cancelLabel: null,
-        });
-        return;
-    }
-
-    router.post(route('mfa.totp.setup-qr'), {}, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: (page) => {
-            const payload = page.props?.flash?.totpSetup;
-            if (!payload || !payload.qrSvg) {
-                modal.danger({
-                    title: 'TOTP setup unavailable',
-                    message: 'Unable to generate TOTP setup QR.',
-                    confirmLabel: 'Close',
-                    cancelLabel: null,
-                });
-                return;
-            }
-
-            openTotpSetupModal(payload);
-        },
-        onError: (errors) => {
-            modal.danger({
-                title: 'TOTP setup unavailable',
-                message: errors.code ?? 'Unable to generate TOTP setup QR.',
-                confirmLabel: 'Close',
-                cancelLabel: null,
-            });
-        },
     });
 };
 </script>
@@ -298,22 +132,7 @@ const handleTotpAction = () => {
                     <div class="p-6">
                         <SettingsProfileSection v-if="activeSection === 'profile'" />
 
-                        <SettingsSecuritySection
-                            v-else-if="activeSection === 'security'"
-                            :two-factor-enabled="twoFactorEnabled"
-                            :mfa-email-enabled="mfaEmailEnabled"
-                            :mfa-totp-enabled="mfaTotpEnabled"
-                            :passkey-enabled="passkeyEnabled"
-                            :biometric-enabled="biometricEnabled"
-                            :oauth-providers="oauthProviders"
-                            :passkeys="passkeys"
-                            :active-sessions="activeSessions"
-                            @toggle-two-factor="toggleTwoFactor"
-                            @toggle-email="toggleMfaEmail"
-                            @toggle-passkey="togglePasskey"
-                            @toggle-biometric="toggleBiometric"
-                            @totp-action="handleTotpAction"
-                        />
+                        <SettingsSecuritySection v-else-if="activeSection === 'security'" :security="settingProps.security" />
 
                         <SettingsNotificationsSection v-else-if="activeSection === 'notifications'" />
                         <SettingsDevicesSection v-else-if="activeSection === 'devices'" />

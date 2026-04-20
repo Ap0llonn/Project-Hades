@@ -1,5 +1,6 @@
 <?php
 
+use App\Features\Dashboard\DashboardController;
 use App\Features\Dashboard\Settings\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -35,9 +36,7 @@ Route::domain('vault.vaultguardian.test')
 
         require base_path('routes/Auth/logout.php');
 
-        Route::get('/dashboard', function () {
-
-        })->name('dashboard')->middleware('auth');
+        Route::get('/dashboard', DashboardController::class)->name('dashboard')->middleware('auth');
 
         Route::get('/settings', SettingsController::class)->name('settings')->middleware('auth');
         require base_path('routes/Auth/mfa.php');

@@ -1,48 +1,179 @@
 <script setup>
-import { Bell, Fingerprint, KeyRound, Shield, Smartphone } from 'lucide-vue-next';
+import {computed, ref} from 'vue';
+import {router, usePage} from '@inertiajs/vue3';
+import {route} from 'ziggy-js';
+import {Bell, Fingerprint, KeyRound, Shield, Smartphone} from 'lucide-vue-next';
+import {useModal} from '../../../../shared/modal/index.ts';
 
-defineProps({
-    twoFactorEnabled: {
-        type: Boolean,
-        required: true,
-    },
-    mfaEmailEnabled: {
-        type: Boolean,
-        required: true,
-    },
-    mfaTotpEnabled: {
-        type: Boolean,
-        required: true,
-    },
-    passkeyEnabled: {
-        type: Boolean,
-        required: true,
-    },
-    biometricEnabled: {
-        type: Boolean,
-        required: true,
-    },
-    oauthProviders: {
-        type: Array,
-        required: true,
-    },
-    passkeys: {
-        type: Array,
-        required: true,
-    },
-    activeSessions: {
-        type: Array,
-        required: true,
-    },
-});
+const modal = useModal();
+const page = usePage();
 
-defineEmits([
-    'toggle-two-factor',
-    'toggle-email',
-    'toggle-passkey',
-    'toggle-biometric',
-    'totp-action',
+const securityProps = defineProps({
+    security: {
+        type: Object,
+        required: true
+    }
+})
+
+const twoFactorEnabled = computed(() => securityProps.security.mfa_activated)
+const mfaTotpEnabled = computed(() => securityProps.security.totp_enabled)
+const passkeyEnabled = ref(false);
+const biometricEnabled = ref(true);
+
+
+const oauthProviders = ref([
+    {
+        name: 'Google',
+        linked: true,
+        account: 'sam.doe@gmail.com',
+    },
+    {
+        name: 'GitHub',
+        linked: false,
+        account: '',
+    },
+    {
+        name: 'Microsoft',
+        linked: false,
+        account: '',
+    },
 ]);
+
+const passkeys = ref([
+    {
+        name: 'MacBook Pro',
+        createdAt: 'April 8, 2026',
+    },
+    {
+        name: 'iPhone 16',
+        createdAt: 'April 12, 2026',
+    },
+]);
+
+const activeSessions = ref([
+    {
+        device: 'Windows 11 | Chrome',
+        location: 'Montreal, CA',
+        lastSeen: 'Active now',
+        current: true,
+    },
+    {
+        device: 'iPhone 16 | iOS App',
+        location: 'Montreal, CA',
+        lastSeen: '2 hours ago',
+        current: false,
+    },
+    {
+        device: 'MacBook Pro | Safari',
+        location: 'Quebec, CA',
+        lastSeen: 'Yesterday',
+        current: false,
+    },
+]);
+
+const openTotpSetupModal = (payload) => {
+    modal.form({
+        title: 'Set up authenticator app',
+        message: 'Scan this QR code, then enter the 6-digit code from your authenticator app.',
+        qrSvg: payload.qrSvg,
+        confirmLabel: 'Activate',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'setupKey',
+                label: 'Setup key',
+                required: true,
+                initialValue: payload.setupKey ?? '',
+            },
+            {
+                name: 'verificationCode',
+                label: 'Verification code',
+                placeholder: '123456',
+                autocomplete: 'one-time-code',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const verificationCode = values.verificationCode.trim();
+
+            if (!/^\d{6}$/.test(verificationCode)) {
+                throw new Error('Verification code must be exactly 6 digits.');
+            }
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.totp.verify'),
+                    {
+                        code: verificationCode,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.code ?? 'Unable to verify authenticator code.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('TOTP verification was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaTotpEnabled.value = true;
+            twoFactorEnabled.value = true;
+
+            modal.confirmation({
+                title: 'Authenticator app activated',
+                message: 'TOTP is now configured for your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const handleTotpAction = () => {
+    if (mfaTotpEnabled.value) {
+        modal.confirmation({
+            title: 'Edit authenticator app',
+            message: 'TOTP edit flow is not wired yet. Keep your current setup for now.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+        return;
+    }
+
+    router.post(route('mfa.totp.setup-qr'), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (visitPage) => {
+            const payload = visitPage?.flash?.totpSetup
+                ?? visitPage?.props?.flash?.totpSetup
+                ?? page.props?.flash?.totpSetup;
+
+            if (!payload || !payload.qrSvg) {
+                modal.danger({
+                    title: 'TOTP setup unavailable',
+                    message: 'Unable to generate TOTP setup QR.',
+                    confirmLabel: 'Close',
+                    cancelLabel: null,
+                });
+                return;
+            }
+
+            openTotpSetupModal(payload);
+        },
+        onError: (errors) => {
+            modal.danger({
+                title: 'TOTP setup unavailable',
+                message: errors.code ?? 'Unable to generate TOTP setup QR.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
 </script>
 
 <template>
@@ -57,7 +188,7 @@ defineEmits([
                 <div class="flex items-center justify-between gap-4 py-5">
                     <div class="flex items-center gap-4">
                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                            <KeyRound class="h-6 w-6" />
+                            <KeyRound class="h-6 w-6"/>
                         </div>
                         <div>
                             <p class="text-2xl font-semibold tracking-tight text-on-surface">Master Password</p>
@@ -75,19 +206,22 @@ defineEmits([
                 <div class="py-5">
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-4">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-                                <Smartphone class="h-6 w-6" />
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                                <Smartphone class="h-6 w-6"/>
                             </div>
                             <div>
-                                <p class="text-2xl font-semibold tracking-tight text-on-surface">Two-Factor Authentication (2FA)</p>
-                                <p class="mt-1 text-sm text-on-surface-variant">Add an extra layer of security with 2FA</p>
+                                <p class="text-2xl font-semibold tracking-tight text-on-surface">Two-Factor
+                                    Authentication (2FA)</p>
+                                <p class="mt-1 text-sm text-on-surface-variant">Add an extra layer of security with
+                                    2FA</p>
                             </div>
                         </div>
                         <button
                             type="button"
                             class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
                             :class="twoFactorEnabled ? 'bg-primary' : 'bg-surface-container-high'"
-                            @click="$emit('toggle-two-factor')"
+                            @click="twoFactorEnabled = !twoFactorEnabled"
                         >
                             <span
                                 class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
@@ -97,12 +231,14 @@ defineEmits([
                     </div>
 
                     <div v-if="twoFactorEnabled" class="mt-4 border-t border-outline-variant pt-4">
-                        <p class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Two-factor methods</p>
+                        <p class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-surface-variant">
+                            Two-factor methods</p>
 
                         <article class="flex items-start justify-between gap-4 border-b border-outline-variant py-4">
                             <div class="flex min-w-0 items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary-container text-primary">
-                                    <Smartphone class="h-5 w-5" />
+                                <div
+                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary-container text-primary">
+                                    <Smartphone class="h-5 w-5"/>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2">
@@ -124,7 +260,7 @@ defineEmits([
                             <button
                                 type="button"
                                 class="shrink-0 rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
-                                @click="$emit('totp-action')"
+                                @click="handleTotpAction"
                             >
                                 {{ mfaTotpEnabled ? 'Edit' : 'Setup' }}
                             </button>
@@ -132,8 +268,9 @@ defineEmits([
 
                         <article class="flex items-start justify-between gap-4 pt-4">
                             <div class="flex min-w-0 items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant">
-                                    <Bell class="h-5 w-5" />
+                                <div
+                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant">
+                                    <Bell class="h-5 w-5"/>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2">
@@ -155,7 +292,7 @@ defineEmits([
                             <button
                                 type="button"
                                 class="shrink-0 rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
-                                @click="$emit('toggle-email')"
+                                @click="mfaEmailEnabled = !mfaEmailEnabled"
                             >
                                 {{ mfaEmailEnabled ? 'Edit' : 'Setup' }}
                             </button>
@@ -166,8 +303,9 @@ defineEmits([
                 <div class="py-5">
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-4">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                                <Shield class="h-6 w-6" />
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                                <Shield class="h-6 w-6"/>
                             </div>
                             <div>
                                 <p class="text-2xl font-semibold tracking-tight text-on-surface">Passkey</p>
@@ -178,7 +316,7 @@ defineEmits([
                             type="button"
                             class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
                             :class="passkeyEnabled ? 'bg-primary' : 'bg-surface-container-high'"
-                            @click="$emit('toggle-passkey')"
+                            @click="passkeyEnabled = !passkeyEnabled"
                         >
                             <span
                                 class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
@@ -196,7 +334,8 @@ defineEmits([
                             <p class="text-sm font-medium text-on-surface">{{ passkey.name }}</p>
                             <p class="text-xs text-on-surface-variant">Registered on {{ passkey.createdAt }}</p>
                         </div>
-                        <button type="button" class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
+                        <button type="button"
+                                class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
                             Register New Passkey
                         </button>
                     </div>
@@ -205,8 +344,9 @@ defineEmits([
                 <div class="py-5">
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-4">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
-                                <Fingerprint class="h-6 w-6" />
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+                                <Fingerprint class="h-6 w-6"/>
                             </div>
                             <div>
                                 <p class="text-2xl font-semibold tracking-tight text-on-surface">Biometric Security</p>
@@ -217,7 +357,7 @@ defineEmits([
                             type="button"
                             class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
                             :class="biometricEnabled ? 'bg-primary' : 'bg-surface-container-high'"
-                            @click="$emit('toggle-biometric')"
+                            @click="biometricEnabled = !biometricEnabled"
                         >
                             <span
                                 class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
@@ -259,7 +399,8 @@ defineEmits([
 
         <section class="border-t border-outline-variant pt-6">
             <p class="font-medium text-on-surface">Sessions</p>
-            <p class="mt-1 text-sm text-on-surface-variant">Review and revoke active account sessions across devices.</p>
+            <p class="mt-1 text-sm text-on-surface-variant">Review and revoke active account sessions across
+                devices.</p>
             <div class="mt-4 divide-y divide-outline-variant">
                 <div
                     v-for="session in activeSessions"
@@ -278,7 +419,8 @@ defineEmits([
                     </span>
                 </div>
             </div>
-            <button type="button" class="mt-4 rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface">
+            <button type="button"
+                    class="mt-4 rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface">
                 Revoke Other Sessions
             </button>
         </section>
