@@ -6,6 +6,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', function () {
     return Inertia::render('auth/login/pages/LoginPage');
-})->name('login');
+})->middleware('guest')->name('login');
 
 Route::post('/login', LoginController::class)->name('login.perform')->middleware('throttle:login');
