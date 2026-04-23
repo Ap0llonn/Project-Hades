@@ -1,5 +1,5 @@
 <script setup>
-import {computed, ref} from 'vue';
+import {ref, watch} from 'vue';
 import {router, usePage} from '@inertiajs/vue3';
 import {route} from 'ziggy-js';
 import {Bell, Fingerprint, KeyRound, Shield, Smartphone} from 'lucide-vue-next';
@@ -11,15 +11,27 @@ const page = usePage();
 const securityProps = defineProps({
     security: {
         type: Object,
-        required: true
+        default: () => ({
+            mfa_activated: false,
+            totp_enabled: false,
+        }),
     }
 })
 
-const twoFactorEnabled = computed(() => securityProps.security.mfa_activated)
-const mfaTotpEnabled = computed(() => securityProps.security.totp_enabled)
+const twoFactorEnabled = ref(false);
+const mfaTotpEnabled = ref(false);
+const mfaEmailEnabled = ref(true);
 const passkeyEnabled = ref(false);
 const biometricEnabled = ref(true);
 
+watch(
+    () => securityProps.security,
+    (value) => {
+        twoFactorEnabled.value = Boolean(value?.mfa_activated);
+        mfaTotpEnabled.value = Boolean(value?.totp_enabled);
+    },
+    { immediate: true, deep: true },
+);
 
 const oauthProviders = ref([
     {
@@ -133,14 +145,70 @@ const openTotpSetupModal = (payload) => {
     });
 };
 
+const openTotpRemovalModal = () => {
+    modal.form({
+        title: 'Remove authenticator app',
+        message: 'Enter your master password to remove this authenticator method.',
+        confirmLabel: 'Remove',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'masterPassword',
+                label: 'Master password',
+                type: 'password',
+                autocomplete: 'current-password',
+                placeholder: 'Enter your master password',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const masterPassword = values.masterPassword.trim();
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.totp.disable'),
+                    {
+                        masterPassword,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.masterPassword ?? 'Unable to remove authenticator app.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('Authenticator removal was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaTotpEnabled.value = false;
+            twoFactorEnabled.value = false;
+
+            modal.confirmation({
+                title: 'Authenticator app removed',
+                message: 'The authenticator app has been removed from your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const handleTwoFactorToggle = () => {
+    if (twoFactorEnabled.value && mfaTotpEnabled.value) {
+        openTotpRemovalModal();
+        return;
+    }
+
+    twoFactorEnabled.value = !twoFactorEnabled.value;
+};
+
 const handleTotpAction = () => {
     if (mfaTotpEnabled.value) {
-        modal.confirmation({
-            title: 'Edit authenticator app',
-            message: 'TOTP edit flow is not wired yet. Keep your current setup for now.',
-            confirmLabel: 'Close',
-            cancelLabel: null,
-        });
+        openTotpRemovalModal();
         return;
     }
 
@@ -221,7 +289,7 @@ const handleTotpAction = () => {
                             type="button"
                             class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
                             :class="twoFactorEnabled ? 'bg-primary' : 'bg-surface-container-high'"
-                            @click="twoFactorEnabled = !twoFactorEnabled"
+                            @click="handleTwoFactorToggle"
                         >
                             <span
                                 class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
@@ -259,10 +327,13 @@ const handleTotpAction = () => {
                             </div>
                             <button
                                 type="button"
-                                class="shrink-0 rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
+                                class="shrink-0 rounded-md border px-3 py-1 text-sm font-medium transition-colors"
+                                :class="mfaTotpEnabled
+                                    ? 'border-red-500 text-red-600 hover:bg-red-600 hover:text-white'
+                                    : 'border-primary text-primary hover:bg-primary hover:text-on-primary'"
                                 @click="handleTotpAction"
                             >
-                                {{ mfaTotpEnabled ? 'Edit' : 'Setup' }}
+                                {{ mfaTotpEnabled ? 'Remove' : 'Setup' }}
                             </button>
                         </article>
 

@@ -15,3 +15,4 @@ Route::get('/mfa/recovery-codes', function () {
 Route::post('/mfa/recovery-codes', [RecoveryCodeController::class, 'store'])->middleware('auth')->name('mfa.recovery-codes.send');
 Route::post('/mfa/totp/setup-qr', [TotpController::class, 'setupQr'])->middleware('auth')->name('mfa.totp.setup-qr');
 Route::post('/mfa/totp/verify', [TotpController::class, 'verify'])->middleware('auth')->name('mfa.totp.verify');
+Route::post('/mfa/totp/disable', [TotpController::class, 'disable'])->middleware('auth')->name('mfa.totp.disable');

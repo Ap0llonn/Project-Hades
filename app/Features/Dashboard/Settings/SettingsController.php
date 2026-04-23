@@ -11,11 +11,21 @@ class SettingsController
     public function __invoke() : Response
     {
         $user = Auth::user();
-        $userMfa = $user->mfa;
+        $userMfa = $user->mfa()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'totp_enabled' => false,
+                'totp_secret' => null,
+                'recovery_codes' => [],
+                'recovery_codes_show' => false,
+                'mfa_activated' => false,
+            ],
+        );
+
         return Inertia::render('dashboard/settings/pages/SettingsPage', [
             'security' => [
-                'mfa_activated' => $userMfa->mfa_activated,
-                'totp_enabled' => $userMfa->totp_enabled,
+                'mfa_activated' => (bool) ($userMfa?->mfa_activated ?? false),
+                'totp_enabled' => (bool) ($userMfa?->totp_enabled ?? false),
             ]
         ]);
     }

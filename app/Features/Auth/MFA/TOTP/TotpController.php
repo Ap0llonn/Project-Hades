@@ -10,6 +10,7 @@ use BaconQrCode\Writer;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use OTPHP\TOTP;
@@ -47,7 +48,7 @@ class TotpController
         $qrSvg = $writer->writeString($provisioningUri);
 
         return redirect()->route('settings')->with('totpSetup', [
-            'setupKey' => $secret, // raw secret shown only once
+            'setupKey' => $secret,
             'provisioningUri' => $provisioningUri,
             'qrSvg' => $qrSvg,
         ]);
@@ -83,7 +84,7 @@ class TotpController
         try {
             $secret = decrypt($secret);
         } catch (DecryptException) {
-            // Secret is already stored as plain base32.
+
         }
 
 
@@ -106,7 +107,33 @@ class TotpController
     public function disable(Request $request): RedirectResponse
     {
         $user = $request->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
+        $payload = $request->validate([
+            'masterPassword' => ['required', 'string'],
+        ]);
+
+        if (!Hash::check($payload['masterPassword'], $user->password_hash)) {
+            throw ValidationException::withMessages([
+                'masterPassword' => 'Master password is incorrect.',
+            ]);
+        }
+
+        $mfaMethods = MfaMethods::query()->where('user_id', $user->id)->first();
+        if ($mfaMethods) {
+            $mfaMethods->totp_secret = null;
+            $mfaMethods->mfa_activated = false;
+
+            if (Schema::hasColumn('mfa_methods', 'totp_enabled') && array_key_exists('totp_enabled', $mfaMethods->getAttributes())) {
+                $mfaMethods->totp_enabled = false;
+            }
+
+            $mfaMethods->save();
+        }
+
+        return redirect()->route('settings')->with('success', 'Authenticator app removed.');
 
     }
 }
