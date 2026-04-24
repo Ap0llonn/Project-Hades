@@ -1,18 +1,17 @@
 <?php
 
-use App\Features\Auth\MFA\MfaValidation\MfaValidationController;
 use App\Features\Auth\MFA\RecoveryCodes\Store\RecoveryCodeController;
-use App\Features\Auth\MFA\TOTP\TotpController;
+use App\Features\Auth\MFA\TOTP\Disable\DisableTotpController;
+use App\Features\Auth\MFA\TOTP\Generate\GenerateTotpController;
+use App\Features\Auth\MFA\TOTP\Page\TotpPageController;
+use App\Features\Auth\MFA\TOTP\Verify\VerifyTotpController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/mfa', MfaValidationController::class)->name('mfa');
+Route::get('/mfa', TotpPageController::class)->name('mfa');
 
-Route::get('/mfa/recovery-codes', function () {
-    return Inertia::render('auth/mfa/pages/MfaRecoveryCodesPage');
-})->middleware('auth')->name('mfa.recovery-codes');
+Route::get('/mfa/recovery-codes',  [RecoveryCodeController::class, 'page'])->middleware('auth')->name('mfa.recovery-codes');
 
 Route::post('/mfa/recovery-codes', [RecoveryCodeController::class, 'store'])->middleware('auth')->name('mfa.recovery-codes.send');
-Route::post('/mfa/totp/setup-qr', [TotpController::class, 'setupQr'])->middleware('auth')->name('mfa.totp.setup-qr');
-Route::post('/mfa/totp/verify', [TotpController::class, 'verify'])->middleware('auth')->name('mfa.totp.verify');
-Route::post('/mfa/totp/disable', [TotpController::class, 'disable'])->middleware('auth')->name('mfa.totp.disable');
+Route::post('/mfa/totp/setup-qr', GenerateTotpController::class)->middleware('auth')->name('mfa.totp.setup-qr');
+Route::post('/mfa/totp/verify', VerifyTotpController::class)->middleware('auth')->name('mfa.totp.verify');
+Route::post('/mfa/totp/disable', DisableTotpController::class)->middleware('auth')->name('mfa.totp.disable');

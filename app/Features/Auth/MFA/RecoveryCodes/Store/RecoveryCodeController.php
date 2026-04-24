@@ -12,7 +12,7 @@ class RecoveryCodeController
 {
     public function page(): Response
     {
-        return Inertia::render('Auth/RecoveryCode/Page');
+        return Inertia::render('auth/mfa/pages/MfaRecoveryCodesPage');
     }
 
     public function store(RecoveryCodeRequest $request, CommandBus $commandBus): RedirectResponse
