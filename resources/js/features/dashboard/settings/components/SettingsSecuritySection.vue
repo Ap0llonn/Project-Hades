@@ -114,7 +114,7 @@ const openTotpSetupModal = (payload) => {
 
             await new Promise((resolve, reject) => {
                 router.post(
-                    route('mfa.totp.verify'),
+                    route('mfa.totp.verify-setup'),
                     {
                         code: verificationCode,
                     },

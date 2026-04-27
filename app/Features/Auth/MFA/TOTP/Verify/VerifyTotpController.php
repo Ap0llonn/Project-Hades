@@ -11,8 +11,8 @@ final class VerifyTotpController
     public function __invoke(VerifyTotpRequest $request, CommandBus $commandBus): RedirectResponse
     {
         $payload = $request->validated();
-
         $user = $request->user();
+
         if (!$user) {
             return redirect()->route('login');
         }
@@ -27,9 +27,10 @@ final class VerifyTotpController
             $mfaMethods->update([
                 'recovery_codes_show' => true,
             ]);
+
             return redirect()->route('mfa.recovery-codes');
         }
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->route('settings');
     }
 }

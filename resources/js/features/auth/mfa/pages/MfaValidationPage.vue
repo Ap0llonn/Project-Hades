@@ -5,6 +5,13 @@ import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
+const props = defineProps({
+    challenge: {
+        type: Object,
+        default: () => ({}),
+    },
+});
+
 const method = ref('app');
 const appCode = ref('');
 const recoveryCode = ref('');
@@ -35,6 +42,7 @@ const activeCode = computed(() => {
 
 const inputPlaceholder = computed(() => (method.value === 'recovery' ? 'XXXX-XXXX-XXXX' : '000000'));
 const inputMaxLength = computed(() => (method.value === 'recovery' ? 14 : 6));
+const emailHint = computed(() => props.challenge?.emailHint ?? '');
 
 const switchMethod = (nextMethod) => {
     method.value = nextMethod;
@@ -71,7 +79,7 @@ function verifyCode() {
     error.value = '';
     totpRequest.code = activeCode.value.trim();
 
-    totpRequest.post(route('mfa.totp.verify'), {
+    totpRequest.post(route('mfa.totp.verify-challenge'), {
         preserveScroll: true,
         onError: (errors) => {
             error.value = errors.code ?? 'Unable to verify code.';
@@ -120,6 +128,9 @@ function verifyCode() {
                         </h1>
                         <p class="text-gray-600" style="font-family: 'DM Sans', sans-serif;">
                             {{ titleText }}
+                        </p>
+                        <p v-if="emailHint" class="mt-2 text-xs text-gray-500">
+                            Verifying account {{ emailHint }}
                         </p>
                     </div>
 

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Features\Auth\Login;
+namespace App\Features\Auth\Login\Identify;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class LoginRequest extends FormRequest
+class IdentifyRequest extends FormRequest
 {
     /**
      * @return array<string, mixed>

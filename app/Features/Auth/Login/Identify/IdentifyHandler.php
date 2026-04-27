@@ -1,19 +1,18 @@
 <?php
 
-namespace App\Features\Auth\Login;
+namespace App\Features\Auth\Login\Identify;
 
 use App\Models\User;
 use Ecotone\Modelling\Attribute\CommandHandler;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-final class LoginHandler
+final class IdentifyHandler
 {
 
     #[CommandHandler]
-    public function handle(LoginCommand $command): void
+    public function handle(IdentifyCommand $command): IdentifyResult
     {
         $email = Str::lower(trim($command->email));
         $emailHash = hash_hmac('sha256', $email, (string) config('app.key'));
@@ -25,7 +24,10 @@ final class LoginHandler
             ]);
         }
 
-        Auth::login($user);
+        return new IdentifyResult(
+            (string) $user->id,
+            (bool) $user->mfa->mfa_activated,
+        );
 
     }
 }

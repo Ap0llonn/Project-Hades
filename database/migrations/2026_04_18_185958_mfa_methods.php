@@ -15,6 +15,8 @@ return new class extends Migration
             $table->foreignUuid('user_id')->primary()->constrained()->cascadeOnDelete();
             $table->boolean('totp_enabled')->default(false);
             $table->string('totp_secret')->nullable();
+            $table->string('totp_secret_type')->nullable();
+            $table->boolean('email_enabled')->default(false);
             $table->json('recovery_codes')->nullable();
             $table->boolean('recovery_codes_show')->default(false);
             $table->boolean('mfa_activated')->default(false);
