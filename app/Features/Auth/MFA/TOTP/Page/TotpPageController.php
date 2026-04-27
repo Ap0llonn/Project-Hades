@@ -18,7 +18,6 @@ final class TotpPageController
             $request->session()->put('url.intended', $safeRedirectTo);
         }
 
-        /** @var array{emailHint?:string} $challenge */
         $challenge = $commandBus->send(new TotpPageCommand($pendingUserId, $safeRedirectTo));
 
         return Inertia::render('auth/mfa/pages/MfaValidationPage', [

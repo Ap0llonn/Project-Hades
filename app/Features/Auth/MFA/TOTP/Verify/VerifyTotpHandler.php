@@ -5,7 +5,6 @@ namespace App\Features\Auth\MFA\TOTP\Verify;
 use App\Models\MfaMethods;
 use Ecotone\Modelling\Attribute\CommandHandler;
 use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use OTPHP\TOTP;
 
@@ -41,11 +40,7 @@ final class VerifyTotpHandler
             ]);
         }
 
-        $mfaMethods->mfa_activated = true;
-        if (Schema::hasColumn('mfa_methods', 'totp_enabled') && array_key_exists('totp_enabled', $mfaMethods->getAttributes())) {
-            $mfaMethods->totp_enabled = true;
-        }
-
+        $mfaMethods->totp_enabled = true;
         $mfaMethods->save();
     }
 }

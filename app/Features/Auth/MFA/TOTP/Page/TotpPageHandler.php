@@ -15,8 +15,20 @@ final class TotpPageHandler
             return [];
         }
 
+        $mfa = $user->mfa;
+        $methods = [
+            'totp' => (bool) ($mfa?->totp_enabled && $mfa?->totp_secret),
+            'email' => (bool) $mfa?->email_enabled,
+            'recovery' => is_array($mfa?->recovery_codes) && count($mfa->recovery_codes) > 0,
+        ];
+
+        if (!$methods['totp'] && !$methods['email'] && !$methods['recovery']) {
+            $methods['totp'] = true;
+        }
+
         return [
             'emailHint' => $this->maskEmail((string) $user->email),
+            'methods' => $methods,
         ];
     }
 

@@ -50,6 +50,7 @@ class User extends Authenticatable
                 'user_id' => $user->id,
                 'totp_enabled' => false,
                 'totp_secret' => null,
+                'email_enabled' => false,
                 'recovery_codes' => [],
                 'recovery_codes_show' => false,
                 'mfa_activated' => false,

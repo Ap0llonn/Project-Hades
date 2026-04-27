@@ -18,7 +18,8 @@ final class VerifyTotpChallengeController
 
         $commandBus->send(new VerifyTotpChallengeCommand(
             $pendingUserId,
-            $payload['code']
+            $payload['code'],
+            $payload['method'],
         ));
 
         $request->session()->put('auth.pending_mfa_verified', true);

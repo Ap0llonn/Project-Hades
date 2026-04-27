@@ -1,5 +1,5 @@
 <script setup>
-import {ref, watch} from 'vue';
+import {computed, ref, watch} from 'vue';
 import {router, usePage} from '@inertiajs/vue3';
 import {route} from 'ziggy-js';
 import {Bell, Fingerprint, KeyRound, Shield, Smartphone} from 'lucide-vue-next';
@@ -14,21 +14,22 @@ const securityProps = defineProps({
         default: () => ({
             mfa_activated: false,
             totp_enabled: false,
+            email_enabled: false
         }),
     }
 })
 
-const twoFactorEnabled = ref(false);
 const mfaTotpEnabled = ref(false);
-const mfaEmailEnabled = ref(true);
+const mfaEmailEnabled = ref(false);
+const twoFactorEnabled = computed(() => mfaTotpEnabled.value || mfaEmailEnabled.value);
 const passkeyEnabled = ref(false);
 const biometricEnabled = ref(true);
 
 watch(
     () => securityProps.security,
     (value) => {
-        twoFactorEnabled.value = Boolean(value?.mfa_activated);
         mfaTotpEnabled.value = Boolean(value?.totp_enabled);
+        mfaEmailEnabled.value = Boolean(value?.email_enabled);
     },
     { immediate: true, deep: true },
 );
@@ -133,7 +134,6 @@ const openTotpSetupModal = (payload) => {
             });
 
             mfaTotpEnabled.value = true;
-            twoFactorEnabled.value = true;
 
             modal.confirmation({
                 title: 'Authenticator app activated',
@@ -185,7 +185,6 @@ const openTotpRemovalModal = () => {
             });
 
             mfaTotpEnabled.value = false;
-            twoFactorEnabled.value = false;
 
             modal.confirmation({
                 title: 'Authenticator app removed',
@@ -198,12 +197,32 @@ const openTotpRemovalModal = () => {
 };
 
 const handleTwoFactorToggle = () => {
-    if (twoFactorEnabled.value && mfaTotpEnabled.value) {
+    if (!twoFactorEnabled.value) {
+        modal.confirmation({
+            title: 'Enable two-factor authentication',
+            message: 'Set up at least one method below to enable MFA on your account.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+        return;
+    }
+
+    if (mfaTotpEnabled.value && !mfaEmailEnabled.value) {
         openTotpRemovalModal();
         return;
     }
 
-    twoFactorEnabled.value = !twoFactorEnabled.value;
+    if (mfaEmailEnabled.value && !mfaTotpEnabled.value) {
+        openEmailRemovalModal();
+        return;
+    }
+
+    modal.confirmation({
+        title: 'Multiple MFA methods enabled',
+        message: 'Remove Authenticator app and Email code below to fully disable MFA.',
+        confirmLabel: 'Close',
+        cancelLabel: null,
+    });
 };
 
 const handleTotpAction = () => {
@@ -242,6 +261,134 @@ const handleTotpAction = () => {
         },
     });
 };
+const openEmailSetupModal = () => {
+    modal.form({
+        title: 'Set up email 2FA',
+        message: 'Check your email and enter the 6-digit verification code.',
+        confirmLabel: 'Activate',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'verificationCode',
+                label: 'Verification code',
+                placeholder: '123456',
+                autocomplete: 'one-time-code',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const verificationCode = values.verificationCode.trim();
+
+            if (!/^\d{6}$/.test(verificationCode)) {
+                throw new Error('Verification code must be exactly 6 digits.');
+            }
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.email.verify'),
+                    {
+                        code: verificationCode,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.code ?? 'Unable to verify authenticator code.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('email verification was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaEmailEnabled.value = true;
+
+            modal.confirmation({
+                title: 'Email MFA activated',
+                message: 'Email MFA is now configured for your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const openEmailRemovalModal = () => {
+    modal.form({
+        title: 'Remove email 2FA',
+        message: 'Enter your master password to remove email verification from your account.',
+        confirmLabel: 'Remove',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'masterPassword',
+                label: 'Master password',
+                type: 'password',
+                autocomplete: 'current-password',
+                placeholder: 'Enter your master password',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const masterPassword = values.masterPassword.trim();
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.email.disable'),
+                    {
+                        masterPassword,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.masterPassword ?? 'Unable to remove email 2FA.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('Email 2FA removal was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaEmailEnabled.value = false;
+
+            modal.confirmation({
+                title: 'Email 2FA removed',
+                message: 'Email verification has been removed from your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const handleEmailAction = () => {
+    if (mfaEmailEnabled.value) {
+        openEmailRemovalModal();
+        return;
+    }
+
+    router.post(route('mfa.email.generate'), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            openEmailSetupModal();
+        },
+        onError: (errors) => {
+            modal.danger({
+                title: 'Email setup unavailable',
+                message: errors.code ?? 'Unable to send email verification code.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
 </script>
 
 <template>
@@ -362,10 +509,13 @@ const handleTotpAction = () => {
                             </div>
                             <button
                                 type="button"
-                                class="shrink-0 rounded-md border border-primary px-3 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
-                                @click="mfaEmailEnabled = !mfaEmailEnabled"
+                                class="shrink-0 rounded-md border px-3 py-1 text-sm font-medium transition-colors"
+                                :class="mfaEmailEnabled
+                                    ? 'border-red-500 text-red-600 hover:bg-red-600 hover:text-white'
+                                    : 'border-primary text-primary hover:bg-primary hover:text-on-primary'"
+                                @click="handleEmailAction"
                             >
-                                {{ mfaEmailEnabled ? 'Edit' : 'Setup' }}
+                                {{ mfaEmailEnabled ? 'Remove' : 'Setup' }}
                             </button>
                         </article>
                     </div>

@@ -15,6 +15,7 @@ class MfaMethods extends Model
         'user_id',
         'totp_enabled',
         'totp_secret',
+        'email_enabled',
         'recovery_codes',
         'recovery_codes_show',
         'mfa_activated'
@@ -26,6 +27,7 @@ class MfaMethods extends Model
             'user_id' => 'string',
             'totp_enabled' => 'boolean',
             'totp_secret' => 'string',
+            'email_enabled' => 'boolean',
             'recovery_codes' => 'array',
             'recovery_codes_show' => 'boolean',
             'mfa_activated' => 'boolean',
@@ -42,12 +44,13 @@ class MfaMethods extends Model
         static::saving(function ($mfa) {
             $attributes = $mfa->getAttributes();
 
-            if (array_key_exists('totp_enabled', $attributes)) {
-                $mfa->mfa_activated = (bool) $mfa->totp_enabled;
-                return;
+            if (!array_key_exists('email_enabled', $attributes) || $mfa->email_enabled === null) {
+                $mfa->email_enabled = false;
             }
 
-            if ($mfa->mfa_activated === null) {
+            if (array_key_exists('totp_enabled', $attributes) || array_key_exists('email_enabled', $attributes)) {
+                $mfa->mfa_activated = (bool) ($mfa->totp_enabled || $mfa->email_enabled);
+            } elseif ($mfa->mfa_activated === null) {
                 $mfa->mfa_activated = false;
             }
         });

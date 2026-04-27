@@ -9,6 +9,7 @@ final class VerifyTotpChallengeRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'method' => ['required', 'string', 'in:totp,email,recovery'],
             'code' => ['required', 'string'],
         ];
     }

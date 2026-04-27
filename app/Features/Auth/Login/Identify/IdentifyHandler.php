@@ -26,7 +26,7 @@ final class IdentifyHandler
 
         return new IdentifyResult(
             (string) $user->id,
-            (bool) $user->mfa->mfa_activated,
+            (bool) ($user->mfa?->mfa_activated ?? false),
         );
 
     }

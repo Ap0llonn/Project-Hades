@@ -1,7 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { AlertCircle, ArrowLeft, ChevronDown, KeyRound, ShieldCheck, Smartphone } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { AlertCircle, ArrowLeft, Bell, KeyRound, ShieldCheck, Smartphone } from 'lucide-vue-next';
+import { computed, ref, watchEffect } from 'vue';
 import { route } from 'ziggy-js';
 import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
@@ -12,20 +12,56 @@ const props = defineProps({
     },
 });
 
-const method = ref('app');
-const appCode = ref('');
+const method = ref('totp');
+const totpCode = ref('');
+const emailCode = ref('');
 const recoveryCode = ref('');
-const isRecoveryMenuOpen = ref(false);
+const isSendingEmailCode = ref(false);
+const emailCodeMessage = ref('');
+const hasRequestedEmailCode = ref(false);
 const error = ref('');
 
-const isAppCodeComplete = computed(() => appCode.value.length === 6);
+const availableMethods = computed(() => {
+    const methods = props.challenge?.methods ?? {};
+
+    return {
+        totp: Boolean(methods.totp),
+        email: Boolean(methods.email),
+        recovery: Boolean(methods.recovery),
+    };
+});
+
+const availableMethodOrder = computed(() => {
+    const order = ['totp', 'email', 'recovery'];
+    return order.filter((item) => availableMethods.value[item]);
+});
+
+watchEffect(() => {
+    if (!availableMethodOrder.value.includes(method.value)) {
+        method.value = availableMethodOrder.value[0] ?? 'totp';
+    }
+});
+
+watchEffect(() => {
+    if (method.value === 'email' && availableMethods.value.email && !hasRequestedEmailCode.value) {
+        requestEmailCode();
+    }
+});
+
+const isTotpCodeComplete = computed(() => totpCode.value.length === 6);
+const isEmailCodeComplete = computed(() => emailCode.value.length === 6);
 const canSubmitRecoveryCode = computed(() => recoveryCode.value.trim().length > 0);
+
 const canSubmit = computed(() => {
-    if (method.value === 'app') {
-        return isAppCodeComplete.value;
+    if (method.value === 'recovery') {
+        return canSubmitRecoveryCode.value;
     }
 
-    return canSubmitRecoveryCode.value;
+    if (method.value === 'email') {
+        return isEmailCodeComplete.value;
+    }
+
+    return isTotpCodeComplete.value;
 });
 
 const titleText = computed(() => {
@@ -33,23 +69,83 @@ const titleText = computed(() => {
         return 'Enter one of your recovery codes';
     }
 
+    if (method.value === 'email') {
+        return 'Enter the code sent to your email';
+    }
+
     return 'Enter the code from your authenticator app';
 });
 
 const activeCode = computed(() => {
-    return method.value === 'recovery' ? recoveryCode.value : appCode.value;
+    if (method.value === 'recovery') {
+        return recoveryCode.value;
+    }
+
+    if (method.value === 'email') {
+        return emailCode.value;
+    }
+
+    return totpCode.value;
 });
 
-const inputPlaceholder = computed(() => (method.value === 'recovery' ? 'XXXX-XXXX-XXXX' : '000000'));
+const inputPlaceholder = computed(() => {
+    if (method.value === 'recovery') {
+        return 'XXXX-XXXX-XXXX';
+    }
+
+    return '000000';
+});
+
 const inputMaxLength = computed(() => (method.value === 'recovery' ? 14 : 6));
 const emailHint = computed(() => props.challenge?.emailHint ?? '');
 
-const switchMethod = (nextMethod) => {
-    method.value = nextMethod;
-    appCode.value = '';
-    recoveryCode.value = '';
-    isRecoveryMenuOpen.value = false;
+function requestEmailCode(force = false) {
+    if (!availableMethods.value.email || isSendingEmailCode.value) {
+        return;
+    }
+
+    if (!force && hasRequestedEmailCode.value) {
+        return;
+    }
+
     error.value = '';
+    emailCodeMessage.value = '';
+    isSendingEmailCode.value = true;
+
+    useForm({ force: Boolean(force) }).post(route('mfa.email.request-challenge'), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            hasRequestedEmailCode.value = true;
+            emailCodeMessage.value = 'Verification code ready. Check your inbox.';
+        },
+        onError: (errors) => {
+            if (!force) {
+                hasRequestedEmailCode.value = false;
+            }
+            error.value = errors.code ?? 'Unable to send email verification code.';
+        },
+        onFinish: () => {
+            isSendingEmailCode.value = false;
+        },
+    });
+}
+
+const switchMethod = (nextMethod) => {
+    if (!availableMethods.value[nextMethod]) {
+        return;
+    }
+
+    method.value = nextMethod;
+    totpCode.value = '';
+    emailCode.value = '';
+    recoveryCode.value = '';
+    emailCodeMessage.value = '';
+    error.value = '';
+
+    if (nextMethod === 'email' && !hasRequestedEmailCode.value) {
+        requestEmailCode();
+    }
 };
 
 const handleCodeInput = (event) => {
@@ -64,22 +160,25 @@ const handleCodeInput = (event) => {
         return;
     }
 
-    appCode.value = rawValue.replace(/\D/g, '').slice(0, 6);
+    if (method.value === 'email') {
+        emailCode.value = rawValue.replace(/\D/g, '').slice(0, 6);
+        return;
+    }
+
+    totpCode.value = rawValue.replace(/\D/g, '').slice(0, 6);
 };
 
-const selectRecoveryMethod = () => {
-    switchMethod('recovery');
-};
-
-const totpRequest = useForm({
+const challengeRequest = useForm({
+    method: '',
     code: '',
 });
 
 function verifyCode() {
     error.value = '';
-    totpRequest.code = activeCode.value.trim();
+    challengeRequest.method = method.value;
+    challengeRequest.code = activeCode.value.trim();
 
-    totpRequest.post(route('mfa.totp.verify-challenge'), {
+    challengeRequest.post(route('mfa.totp.verify-challenge'), {
         preserveScroll: true,
         onError: (errors) => {
             error.value = errors.code ?? 'Unable to verify code.';
@@ -136,33 +235,63 @@ function verifyCode() {
 
                     <div class="mb-6 grid grid-cols-1 gap-3">
                         <button
+                            v-if="availableMethods.totp"
                             type="button"
                             class="rounded-xl border px-4 py-3 text-left transition-colors"
-                            :class="method === 'app'
-                                ? 'border-blue-500 bg-blue-50 text-blue-800 dark:!border-blue-400 dark:!bg-slate-800 dark:!text-blue-100'
-                                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:border-blue-400'"
-                            @click="switchMethod('app')"
+                            :class="method === 'totp'
+                                ? 'border-blue-500 bg-blue-50 text-blue-800'
+                                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'"
+                            @click="switchMethod('totp')"
                         >
                             <span class="mb-1 flex items-center gap-2 text-sm" style="font-weight: 600;">
                                 <Smartphone class="h-4 w-4" />
-                                Auth app
+                                Authenticator app
                             </span>
-                            <span
-                                class="block text-xs"
-                                :class="method === 'app' ? 'text-blue-700 dark:!text-blue-200' : 'text-gray-600 dark:text-slate-300'"
-                            >
+                            <span class="block text-xs" :class="method === 'totp' ? 'text-blue-700' : 'text-gray-600'">
                                 Use your authenticator app code.
                             </span>
                         </button>
 
+                        <button
+                            v-if="availableMethods.email"
+                            type="button"
+                            class="rounded-xl border px-4 py-3 text-left transition-colors"
+                            :class="method === 'email'
+                                ? 'border-blue-500 bg-blue-50 text-blue-800'
+                                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'"
+                            @click="switchMethod('email')"
+                        >
+                            <span class="mb-1 flex items-center gap-2 text-sm" style="font-weight: 600;">
+                                <Bell class="h-4 w-4" />
+                                Email code
+                            </span>
+                            <span class="block text-xs" :class="method === 'email' ? 'text-blue-700' : 'text-gray-600'">
+                                Receive a one-time code by email.
+                            </span>
+                        </button>
+
+                        <button
+                            v-if="availableMethods.recovery"
+                            type="button"
+                            class="rounded-xl border px-4 py-3 text-left transition-colors"
+                            :class="method === 'recovery'
+                                ? 'border-blue-500 bg-blue-50 text-blue-800'
+                                : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'"
+                            @click="switchMethod('recovery')"
+                        >
+                            <span class="mb-1 flex items-center gap-2 text-sm" style="font-weight: 600;">
+                                <KeyRound class="h-4 w-4" />
+                                Recovery code
+                            </span>
+                            <span class="block text-xs" :class="method === 'recovery' ? 'text-blue-700' : 'text-gray-600'">
+                                Use one of your saved recovery codes.
+                            </span>
+                        </button>
                     </div>
 
-                    <div v-if="method !== 'recovery'" class="mb-6 rounded-xl bg-gray-50 p-4">
+                    <div v-if="method === 'totp'" class="mb-6 rounded-xl bg-gray-50 p-4">
                         <div class="flex items-center gap-3">
-                            <div
-                                class="flex h-10 w-10 items-center justify-center rounded-lg"
-                                :class="'bg-gradient-to-br from-indigo-100 to-indigo-50'"
-                            >
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-50">
                                 <Smartphone class="h-5 w-5 text-indigo-600" />
                             </div>
                             <div class="flex-1">
@@ -170,10 +299,37 @@ function verifyCode() {
                                     Authenticator App
                                 </p>
                                 <p class="text-xs text-gray-600">
-                                    Open your app to view the code
+                                    Open your app to view the code.
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    <div v-if="method === 'email'" class="mb-6 rounded-xl bg-gray-50 p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-50">
+                                <Bell class="h-5 w-5 text-indigo-600" />
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900" style="font-weight: 600;">
+                                    Email Verification
+                                </p>
+                                <p class="text-xs text-gray-600">
+                                    A 6-digit code will be sent to your email address.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100"
+                                :disabled="isSendingEmailCode"
+                                @click="requestEmailCode(true)"
+                            >
+                                {{ isSendingEmailCode ? 'Sending...' : 'Resend code' }}
+                            </button>
+                        </div>
+                        <p v-if="emailCodeMessage" class="mt-2 text-xs text-green-600">
+                            {{ emailCodeMessage }}
+                        </p>
                     </div>
 
                     <div class="mb-6">
@@ -195,46 +351,9 @@ function verifyCode() {
                         </p>
                     </div>
 
-                    <div class="mb-8">
-                        <div class="relative">
-                            <button
-                                type="button"
-                                class="group flex w-full items-center justify-between rounded-lg bg-gray-50 px-4 py-3 transition-colors hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                @click="isRecoveryMenuOpen = !isRecoveryMenuOpen"
-                            >
-                                <div class="flex items-center gap-3">
-                                    <KeyRound class="h-5 w-5 text-gray-600 dark:text-slate-200" />
-                                    <span class="text-sm text-gray-700 dark:text-slate-100" style="font-weight: 600;">
-                                        More options
-                                    </span>
-                                </div>
-                                <ChevronDown class="h-4 w-4 text-gray-500 transition-transform dark:text-slate-300" :class="isRecoveryMenuOpen ? 'rotate-180' : ''" />
-                            </button>
-
-                            <Transition
-                                enter-active-class="transition duration-150 ease-out"
-                                enter-from-class="translate-y-1 opacity-0"
-                                enter-to-class="translate-y-0 opacity-100"
-                                leave-active-class="transition duration-100 ease-in"
-                                leave-from-class="translate-y-0 opacity-100"
-                                leave-to-class="translate-y-1 opacity-0"
-                            >
-                                <div
-                                    v-if="isRecoveryMenuOpen"
-                                    class="absolute left-0 z-20 mt-2 w-full rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-slate-600 dark:bg-slate-800"
-                                >
-                                    <button
-                                        type="button"
-                                        class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-slate-100 dark:hover:bg-slate-700"
-                                        @click="selectRecoveryMethod"
-                                    >
-                                        <KeyRound class="h-4 w-4" />
-                                        Recovery code
-                                    </button>
-                                </div>
-                            </Transition>
-                        </div>
-                    </div>
+                    <p class="mb-8 text-xs text-gray-500">
+                        Available methods are shown based on your account security settings.
+                    </p>
 
                     <div class="mb-6 flex gap-3">
                         <a
@@ -251,7 +370,7 @@ function verifyCode() {
                             style="font-weight: 600;"
                             @click="verifyCode"
                         >
-                            {{ totpRequest.processing ? 'Verifying...' : 'Verify' }}
+                            {{ challengeRequest.processing ? 'Verifying...' : 'Verify' }}
                         </button>
                     </div>
 

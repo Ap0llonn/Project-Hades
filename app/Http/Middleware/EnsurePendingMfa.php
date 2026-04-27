@@ -18,10 +18,9 @@ final class EnsurePendingMfa
             return redirect()->intended(route('dashboard'));
         }
 
-        $pendingUserId = (string) $request->session()->get('auth.pending_user_id', '');
-        $pendingStartedAt = (int) $request->session()->get('auth.pending_started_at', 0);
-
-        if ($pendingUserId === '' || $pendingStartedAt === 0) {
+        $pendingUserId = $request->session()->get('auth.pending_user_id', '');
+        $pendingStartedAt = $request->session()->get('auth.pending_started_at', 0);
+        if ($pendingUserId == '' || $pendingStartedAt === 0) {
             $this->clearPendingState($request);
             return redirect()->route('login');
         }
@@ -45,6 +44,7 @@ final class EnsurePendingMfa
             'auth.pending_user_id',
             'auth.pending_started_at',
             'auth.pending_mfa_verified',
+            'auth.pending_email_mfa',
         ]);
     }
 }

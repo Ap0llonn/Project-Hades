@@ -33,5 +33,42 @@ class AppServiceProvider extends ServiceProvider
                     ]);
                 });
         });
+
+        RateLimiter::for('mfa-challenge-verify', function (Request $request) {
+            $pendingUserId = (string) $request->session()->get('auth.pending_user_id', '');
+
+            return Limit::perMinute(5)
+                ->by($pendingUserId . '|' . $request->ip())
+                ->response(function () {
+                    throw ValidationException::withMessages([
+                        'code' => ['Too many MFA verification attempts. Please wait a minute and try again.'],
+                    ]);
+                });
+        });
+
+        RateLimiter::for('mfa-email-challenge', function (Request $request) {
+            $pendingUserId = (string) $request->session()->get('auth.pending_user_id', '');
+
+            return Limit::perMinute(6)
+                ->by($pendingUserId . '|' . $request->ip())
+                ->response(function () {
+                    throw ValidationException::withMessages([
+                        'code' => ['Too many email code requests. Please wait a minute and try again.'],
+                    ]);
+                });
+        });
+
+        RateLimiter::for('mfa-email-setup', function (Request $request) {
+            $user = $request->user();
+            $userId = $user ? (string) $user->id : '';
+
+            return Limit::perMinute(6)
+                ->by($userId . '|' . $request->ip())
+                ->response(function () {
+                    throw ValidationException::withMessages([
+                        'code' => ['Too many setup code requests. Please wait a minute and try again.'],
+                    ]);
+                });
+        });
     }
 }
