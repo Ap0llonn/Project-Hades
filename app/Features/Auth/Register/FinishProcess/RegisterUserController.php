@@ -6,7 +6,6 @@ use App\Models\PendingUser;
 use App\Models\User;
 use Ecotone\Modelling\CommandBus;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\URL;
 
 final class RegisterUserController
 {
@@ -28,12 +27,16 @@ final class RegisterUserController
             return redirect()->route('login');
         }
 
+        /** @var array{password:string,encrypted_private_key:array,kdf_salt:string,kdf_params:array,public_key:string} $payload */
+        $payload = $request->validated();
+
         $commandBus->send(new RegisterUserCommand(
             $pendingUser->email,
-            $request->input('password'),
-            $request->input('encrypted_master_key'),
-            $request->input('kdf_salt'),
-            $request->input('kdf_params'),
+            $payload['password'],
+            $payload['encrypted_private_key'],
+            $payload['kdf_salt'],
+            $payload['kdf_params'],
+            $payload['public_key'],
         ));
 
         $pendingUser->delete();

@@ -9,6 +9,6 @@ final class StartAccountPageController
 {
     public function __invoke(): Response
     {
-        return Inertia::render('auth/pages/StartAccountPage');
+        return Inertia::render('auth/register/pages/StartAccountPage');
     }
 }

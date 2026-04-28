@@ -1,5 +1,7 @@
 <?php
 
+use App\Features\Dashboard\DashboardController;
+use App\Features\Dashboard\Settings\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -31,14 +33,11 @@ Route::domain('vault.vaultguardian.test')
         require base_path('routes/Auth/email.php');
         require base_path('routes/Auth/FinishAccount/register.php');
         require base_path('routes/Auth/login.php');
+
         require base_path('routes/Auth/logout.php');
 
-        Route::get('/dashboard', function () {
-            return Inertia::render('dashboard/pages/DashboardPage');
-        })->name('dashboard')->middleware('auth');
+        Route::get('/dashboard', DashboardController::class)->name('dashboard')->middleware('auth');
 
-        Route::get('/settings', function () {
-            return Inertia::render('dashboard/pages/SettingsPage');
-        })->name('settings')->middleware('auth');
-
+        Route::get('/settings', SettingsController::class)->name('settings')->middleware('auth');
+        require base_path('routes/Auth/mfa.php');
     });

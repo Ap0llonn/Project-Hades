@@ -2,6 +2,7 @@ import {
     DEFAULT_SALT_LENGTH,
     ArgonTypeName,
     BinarySource,
+    getSodium,
     KdfParams,
     deriveArgon2Bytes,
     normalizeBytes,
@@ -11,6 +12,10 @@ import {
 
 export const DEFAULT_MASTER_KEY_BYTES = 32;
 export const DEFAULT_PRIVATE_KEY_BYTES = 32;
+export const DEFAULT_RECOVERY_CODES_COUNT = 12;
+export const DEFAULT_RECOVERY_CODE_SEGMENTS = 3;
+export const DEFAULT_RECOVERY_CODE_SEGMENT_LENGTH = 4;
+export const RECOVERY_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export interface DerivedClientKey {
     derivedKeyBase64: string;
@@ -75,6 +80,58 @@ export class CryptoGenerator {
             privateKeyBase64: await this.generatePrivateKey(privateKeyBytes),
             saltBase64: await this.generateSalt(saltBytes),
         };
+    }
+
+    static async generateRecoveryTokens(
+        count = DEFAULT_RECOVERY_CODES_COUNT,
+        segments = DEFAULT_RECOVERY_CODE_SEGMENTS,
+        segmentLength = DEFAULT_RECOVERY_CODE_SEGMENT_LENGTH,
+    ): Promise<string[]> {
+        const totalCharsNeeded = count * segments * segmentLength;
+        const bytes = await randomCryptoBytes(totalCharsNeeded);
+
+        let byteIndex = 0;
+
+        return Array.from({ length: count }, () => {
+            const tokenParts = Array.from({ length: segments }, () => {
+                let tokenPart = '';
+
+                for (let i = 0; i < segmentLength; i += 1) {
+                    const byte = bytes[byteIndex];
+                    byteIndex += 1;
+                    tokenPart += RECOVERY_CODE_CHARSET[byte % RECOVERY_CODE_CHARSET.length];
+                }
+
+                return tokenPart;
+            });
+
+            return tokenParts.join('-');
+        });
+    }
+
+    static async hashTokens(tokens: string[]): Promise<string[]> {
+        if (!Array.isArray(tokens)) {
+            throw new Error('tokens must be an array of strings.');
+        }
+
+        if (tokens.length === 0) {
+            return [];
+        }
+
+        const sodium = await getSodium();
+
+        return tokens.map((token) => {
+            if (typeof token !== 'string') {
+                throw new Error('Every token must be a string.');
+            }
+
+            const normalizedToken = token.trim().toUpperCase();
+            if (!normalizedToken) {
+                throw new Error('Tokens cannot be empty.');
+            }
+
+            return toBase64(sodium.crypto_hash_sha256(normalizedToken));
+        });
     }
 }
 

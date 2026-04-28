@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'vault.domain' => \App\Http\Middleware\EnsureVaultDomain::class,
             'marketing.domain' => \App\Http\Middleware\EnsureMarketingDomain::class,
+            'pending.mfa' => \App\Http\Middleware\EnsurePendingMfa::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

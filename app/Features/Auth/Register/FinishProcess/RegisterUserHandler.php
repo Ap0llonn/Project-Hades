@@ -26,10 +26,11 @@ final class RegisterUserHandler
                 'password_hash' => Hash::make($command->password),
                 'first_name' => null,
                 'last_name' => null,
-                'master_key_wrapper' => $command->master_key_wrapper,
+                'private_key_wrapper' => $command->private_key_wrapper,
                 'kdf_salt' => $command->kdf_salt,
                 'kdf_params' => $command->kdf_params,
                 'email_verified' => true,
+                'public_key' => $command->public_key,
             ]);
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23000') {

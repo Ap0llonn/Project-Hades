@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Features\Auth\MFA\RecoveryCodes\Store;
+
+use Ecotone\Modelling\CommandBus;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class RecoveryCodeController
+{
+    public function page(): Response
+    {
+        return Inertia::render('auth/mfa/pages/MfaRecoveryCodesPage');
+    }
+
+    public function store(RecoveryCodeRequest $request, CommandBus $commandBus): RedirectResponse
+    {
+        $payload = $request->validated();
+        $commandBus->send(new RecoveryCodeCommand($payload['recoveryCodes']));
+
+        return redirect()->route('dashboard');
+    }
+}
