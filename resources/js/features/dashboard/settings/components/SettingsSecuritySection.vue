@@ -14,7 +14,8 @@ const securityProps = defineProps({
         default: () => ({
             mfa_activated: false,
             totp_enabled: false,
-            email_enabled: false
+            email_enabled: false,
+            passkeys: [],
         }),
     }
 })
@@ -22,7 +23,9 @@ const securityProps = defineProps({
 const mfaTotpEnabled = ref(false);
 const mfaEmailEnabled = ref(false);
 const twoFactorEnabled = computed(() => mfaTotpEnabled.value || mfaEmailEnabled.value);
-const passkeyEnabled = ref(false);
+const passkeys = ref([]);
+const passkeySupported = ref(typeof window.browserSupportsWebAuthn === 'function' && window.browserSupportsWebAuthn());
+const hasPasskeys = computed(() => passkeys.value.length > 0);
 const biometricEnabled = ref(true);
 
 watch(
@@ -30,6 +33,7 @@ watch(
     (value) => {
         mfaTotpEnabled.value = Boolean(value?.totp_enabled);
         mfaEmailEnabled.value = Boolean(value?.email_enabled);
+        passkeys.value = Array.isArray(value?.passkeys) ? value.passkeys : [];
     },
     { immediate: true, deep: true },
 );
@@ -49,17 +53,6 @@ const oauthProviders = ref([
         name: 'Microsoft',
         linked: false,
         account: '',
-    },
-]);
-
-const passkeys = ref([
-    {
-        name: 'MacBook Pro',
-        createdAt: 'April 8, 2026',
-    },
-    {
-        name: 'iPhone 16',
-        createdAt: 'April 12, 2026',
     },
 ]);
 
@@ -389,6 +382,137 @@ const handleEmailAction = () => {
     });
 };
 
+const formatPasskeyTimestamp = (value) => {
+    if (!value) {
+        return 'Never';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return 'Never';
+    }
+
+    return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+const createPasskey = async (name) => {
+    if (!passkeySupported.value) {
+        modal.danger({
+            title: 'Passkeys unavailable',
+            message: 'This browser or device does not support passkeys.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+        return;
+    }
+
+    const optionsResponse = await fetch(route('settings.security.passkeys.options'), {
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+        },
+    });
+
+    if (!optionsResponse.ok) {
+        throw new Error('Unable to generate passkey options.');
+    }
+
+    const options = await optionsResponse.json();
+    const registrationResponse = await window.startRegistration({ optionsJSON: options });
+
+    await new Promise((resolve, reject) => {
+        router.post(
+            route('settings.security.passkeys.store'),
+            {
+                name,
+                options: JSON.stringify(options),
+                passkey: JSON.stringify(registrationResponse),
+            },
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => resolve(),
+                onError: (errors) => {
+                    reject(new Error(errors.passkey ?? 'Unable to register passkey.'));
+                },
+                onCancel: () => {
+                    reject(new Error('Passkey registration was cancelled.'));
+                },
+            },
+        );
+    });
+};
+
+const openPasskeyRegistrationModal = () => {
+    if (!passkeySupported.value) {
+        modal.danger({
+            title: 'Passkeys unavailable',
+            message: 'This browser or device does not support passkeys.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+        return;
+    }
+
+    modal.form({
+        title: 'Register passkey',
+        message: 'Save a passkey to sign in quickly without typing your master password.',
+        confirmLabel: 'Register',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'passkeyName',
+                label: 'Passkey name',
+                placeholder: 'This device',
+                required: false,
+            },
+        ],
+        onSubmit: async (values) => {
+            const passkeyName = values.passkeyName.trim();
+
+            await createPasskey(passkeyName);
+
+            modal.confirmation({
+                title: 'Passkey registered',
+                message: 'You can now use this passkey to sign in.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const removePasskey = (passkeyId) => {
+    modal.danger({
+        title: 'Remove passkey',
+        message: 'This passkey will no longer be able to sign in to your account.',
+        confirmLabel: 'Remove',
+        cancelLabel: 'Cancel',
+        onConfirm: async () => {
+            await new Promise((resolve, reject) => {
+                router.delete(route('settings.security.passkeys.destroy', { passkeyId }), {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => resolve(),
+                    onError: (errors) => {
+                        reject(new Error(errors.passkey ?? 'Unable to remove passkey.'));
+                    },
+                    onCancel: () => {
+                        reject(new Error('Passkey removal was cancelled.'));
+                    },
+                });
+            });
+        },
+    });
+};
+
 </script>
 
 <template>
@@ -535,30 +659,50 @@ const handleEmailAction = () => {
                         </div>
                         <button
                             type="button"
-                            class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
-                            :class="passkeyEnabled ? 'bg-primary' : 'bg-surface-container-high'"
-                            @click="passkeyEnabled = !passkeyEnabled"
+                            class="shrink-0 rounded-md border px-3 py-1 text-sm font-medium transition-colors"
+                            :class="passkeySupported
+                                ? 'border-primary text-primary hover:bg-primary hover:text-on-primary'
+                                : 'border-outline-variant text-on-surface-variant cursor-not-allowed'"
+                            :disabled="!passkeySupported"
+                            @click="openPasskeyRegistrationModal"
                         >
-                            <span
-                                class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
-                                :class="passkeyEnabled ? 'translate-x-7' : 'translate-x-1'"
-                            />
+                            Register
                         </button>
                     </div>
 
-                    <div v-if="passkeyEnabled" class="mt-4 space-y-2 border-t border-outline-variant pt-4">
-                        <div
-                            v-for="passkey in passkeys"
-                            :key="passkey.name"
-                            class="py-1"
-                        >
-                            <p class="text-sm font-medium text-on-surface">{{ passkey.name }}</p>
-                            <p class="text-xs text-on-surface-variant">Registered on {{ passkey.createdAt }}</p>
+                    <div class="mt-4 border-t border-outline-variant pt-4">
+                        <p v-if="!passkeySupported" class="text-sm text-on-surface-variant">
+                            This browser does not support passkeys.
+                        </p>
+
+                        <p v-else-if="!hasPasskeys" class="text-sm text-on-surface-variant">
+                            No passkeys registered yet.
+                        </p>
+
+                        <div v-else class="space-y-3">
+                            <article
+                                v-for="passkey in passkeys"
+                                :key="passkey.id"
+                                class="flex items-start justify-between gap-4 border-b border-outline-variant pb-3 last:border-b-0 last:pb-0"
+                            >
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-on-surface">{{ passkey.name }}</p>
+                                    <p class="mt-1 text-xs text-on-surface-variant">
+                                        Registered: {{ formatPasskeyTimestamp(passkey.created_at) }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-on-surface-variant">
+                                        Last used: {{ formatPasskeyTimestamp(passkey.last_used_at) }}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="shrink-0 rounded-md border border-red-500 px-3 py-1 text-sm font-medium text-red-600 transition-colors hover:bg-red-600 hover:text-white"
+                                    @click="removePasskey(passkey.id)"
+                                >
+                                    Remove
+                                </button>
+                            </article>
                         </div>
-                        <button type="button"
-                                class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container">
-                            Register New Passkey
-                        </button>
                     </div>
                 </div>
 

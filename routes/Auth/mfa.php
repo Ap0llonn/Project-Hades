@@ -5,6 +5,9 @@ use App\Features\Auth\MFA\Email\Challenge\RequestEmailChallengeController;
 use App\Features\Auth\MFA\Email\Disable\DisableEmailController;
 use App\Features\Auth\MFA\Email\Verify\EmailVerifyController;
 use App\Features\Auth\MFA\RecoveryCodes\Store\RecoveryCodeController;
+use App\Features\Auth\Passkey\Create\Start\CreateStartPasskeyController;
+use App\Features\Auth\Passkey\Create\Store\StorePasskeyController;
+use App\Features\Auth\Passkey\Delete\DeletePasskeyController;
 use App\Features\Auth\MFA\TOTP\Disable\DisableTotpController;
 use App\Features\Auth\MFA\TOTP\Generate\GenerateTotpController;
 use App\Features\Auth\MFA\TOTP\Page\TotpPageController;
@@ -26,3 +29,11 @@ Route::post('/mfa/totp/disable', DisableTotpController::class)->middleware('auth
 Route::post('/mfa/email/generate', GenerateEmailController::class)->middleware(['auth', 'throttle:mfa-email-setup'])->name('mfa.email.generate');
 Route::post('/mfa/email/verify', EmailVerifyController::class)->middleware('auth')->name('mfa.email.verify');
 Route::post('/mfa/email/disable', DisableEmailController::class)->middleware('auth')->name('mfa.email.disable');
+
+Route::prefix('/settings/security/passkeys')
+    ->middleware('auth')
+    ->group(function () {
+        Route::get('/options', CreateStartPasskeyController::class)->name('settings.security.passkeys.options');
+        Route::post('/', StorePasskeyController::class)->name('settings.security.passkeys.store');
+        Route::delete('/{passkeyId}', DeletePasskeyController::class)->name('settings.security.passkeys.destroy');
+    });

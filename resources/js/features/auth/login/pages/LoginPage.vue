@@ -1,11 +1,14 @@
 <script setup>
-import {Head, useForm, usePage} from '@inertiajs/vue3';
+import {Head, useForm} from '@inertiajs/vue3';
 import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
 
 const showPassword = ref(false);
+const passkeyError = ref('');
+const passkeyProcessing = ref(false);
+const passkeySupported = typeof window.browserSupportsWebAuthn === 'function' && window.browserSupportsWebAuthn();
 
 const loginRequest = useForm({
     email: '',
@@ -15,6 +18,56 @@ const errorMessage = computed(() => loginRequest.errors.email);
 
 function handleSubmit() {
     loginRequest.post(route('login.perform'));
+}
+
+async function handlePasskeyAuthentication() {
+    if (!passkeySupported || passkeyProcessing.value) {
+        return;
+    }
+
+    passkeyError.value = '';
+    passkeyProcessing.value = true;
+
+    try {
+        const optionsResponse = await fetch(route('passkeys.authentication_options'), {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+
+        if (!optionsResponse.ok) {
+            throw new Error('Unable to prepare passkey sign-in.');
+        }
+
+        const options = await optionsResponse.json();
+
+        const startAuthenticationResponse = await window.startAuthentication({ optionsJSON: options });
+
+        await new Promise((resolve, reject) => {
+            loginRequest.transform(() => ({
+                start_authentication_response: JSON.stringify(startAuthenticationResponse),
+            })).post(route('passkeys.login'), {
+                preserveScroll: true,
+                onSuccess: () => resolve(),
+                onError: (errors) => {
+                    reject(new Error(errors.passkey ?? 'Passkey authentication failed.'));
+                },
+                onCancel: () => {
+                    reject(new Error('Passkey authentication was cancelled.'));
+                },
+                onFinish: () => {
+                    loginRequest.transform((data) => data);
+                },
+            });
+        });
+    } catch (error) {
+        passkeyError.value = error instanceof Error
+            ? error.message
+            : 'Passkey authentication failed.';
+    } finally {
+        passkeyProcessing.value = false;
+    }
 }
 </script>
 
@@ -136,6 +189,28 @@ function handleSubmit() {
                     >
                         {{ loginRequest.processing ? 'Signing In...' : 'Sign In' }}
                     </button>
+
+                    <button
+                        type="button"
+                        :disabled="!passkeySupported || passkeyProcessing"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
+                        data-aos="fade-up"
+                        data-aos-delay="500"
+                        @click="handlePasskeyAuthentication"
+                    >
+                        <Shield class="h-5 w-5" />
+                        {{ passkeyProcessing ? 'Checking Passkey...' : 'Sign In with Passkey' }}
+                    </button>
+
+                    <p
+                        v-if="passkeyError"
+                        class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+                        data-aos="fade-up"
+                        data-aos-delay="540"
+                    >
+                        {{ passkeyError }}
+                    </p>
 
                     <p class="text-center text-gray-600" style="font-family: 'DM Sans', sans-serif;" data-aos="fade-up" data-aos-delay="580">
                         Don't have an account?

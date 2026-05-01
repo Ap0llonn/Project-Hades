@@ -5,6 +5,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { createApp, Fragment, h } from 'vue';
+import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import ModalHost from './shared/components/ModalHost.vue';
 
 const THEME_STORAGE_KEY = 'pm-theme';
@@ -61,6 +62,9 @@ mediaQuery.addEventListener('change', (event) => {
 
 window.setAppTheme = setTheme;
 window.getAppTheme = () => getStoredTheme() ?? 'system';
+window.browserSupportsWebAuthn = browserSupportsWebAuthn;
+window.startAuthentication = startAuthentication;
+window.startRegistration = startRegistration;
 
 createInertiaApp({
     resolve: (name) =>

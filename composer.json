@@ -13,6 +13,7 @@
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
+        "spatie/laravel-passkeys": "^1.7",
         "spomky-labs/otphp": "^11.4",
         "tightenco/ziggy": "^2.6"
     },
