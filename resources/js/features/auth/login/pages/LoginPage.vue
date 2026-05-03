@@ -182,7 +182,7 @@ async function handlePasskeyAuthentication() {
                     <button
                         type="submit"
                         :disabled="loginRequest.processing"
-                        class="w-full rounded-xl bg-blue-600 py-4 text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 disabled:cursor-not-allowed disabled:opacity-70"
+                        class="w-full rounded-xl cursor-pointer bg-blue-600 py-4 text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 disabled:cursor-not-allowed disabled:opacity-70"
                         style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
                         data-aos="fade-up"
                         data-aos-delay="460"
@@ -193,7 +193,7 @@ async function handlePasskeyAuthentication() {
                     <button
                         type="button"
                         :disabled="!passkeySupported || passkeyProcessing"
-                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
                         style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
                         data-aos="fade-up"
                         data-aos-delay="500"

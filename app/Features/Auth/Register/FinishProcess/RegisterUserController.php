@@ -27,15 +27,14 @@ final class RegisterUserController
             return redirect()->route('login');
         }
 
-        /** @var array{password:string,encrypted_private_key:array,kdf_salt:string,kdf_params:array,public_key:string} $payload */
+        /** @var array{password:string,wrapped_private_key:array,wrapped_dek:array,public_key:string} $payload */
         $payload = $request->validated();
 
         $commandBus->send(new RegisterUserCommand(
             $pendingUser->email,
             $payload['password'],
-            $payload['encrypted_private_key'],
-            $payload['kdf_salt'],
-            $payload['kdf_params'],
+            $payload['wrapped_private_key'],
+            $payload['wrapped_dek'],
             $payload['public_key'],
         ));
 

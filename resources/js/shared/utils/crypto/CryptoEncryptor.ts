@@ -125,7 +125,7 @@ export class CryptoEncryptor {
      * Wrap the master key with a key derived from the user's password.
      * Use at signup and password rotation only.
      */
-    static async wrapMasterKeyWithPassword(
+    static async wrapKeyWithPassword(
         masterKey: BinarySource,
         password: string,
         params: EncryptParams = {},

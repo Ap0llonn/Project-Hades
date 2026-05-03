@@ -31,9 +31,8 @@ const finishAccountRequest = useForm({
     id: route().params.id,
     password: '',
     confirm_password: '',
-    encrypted_private_key: null,
-    kdf_salt: '',
-    kdf_params: null,
+    wrapped_private_key: null,
+    wrapped_dek: null,
     public_key: ''
 });
 
@@ -44,15 +43,19 @@ function getError(key) {
 const encryptionErrorMessage = computed(
     () =>
         cryptoError.value ||
-        getError('encrypted_private_key') ||
-        getError('encrypted_private_key.ciphertext') ||
-        getError('encrypted_private_key.iv') ||
-        getError('kdf_salt') ||
-        getError('kdf_params') ||
-        getError('kdf_params.algorithm') ||
-        getError('kdf_params.opsLimit') ||
-        getError('kdf_params.memoryKb') ||
-        getError('kdf_params.type') ||
+        getError('wrapped_private_key') ||
+        getError('wrapped_private_key.ciphertext') ||
+        getError('wrapped_private_key.iv') ||
+        getError('wrapped_dek') ||
+        getError('wrapped_dek.ciphertext') ||
+        getError('wrapped_dek.iv') ||
+        getError('wrapped_dek.salt') ||
+        getError('wrapped_dek.keyLengthBits') ||
+        getError('wrapped_dek.kdf') ||
+        getError('wrapped_dek.kdf.algorithm') ||
+        getError('wrapped_dek.kdf.opsLimit') ||
+        getError('wrapped_dek.kdf.memoryKb') ||
+        getError('wrapped_dek.kdf.type') ||
         '',
 );
 
@@ -101,19 +104,31 @@ async function handleSubmit() {
     }
 
     try {
-        const keyPair = await CryptoGenerator.generateClientKeyPair();
-        const wrappedPK = await CryptoEncryptor.wrapMasterKeyWithPassword(keyPair.privateKeyBase64, finishAccountRequest.password);
-        finishAccountRequest.public_key = keyPair.masterKeyBase64;
-        finishAccountRequest.encrypted_private_key = {
+        //Generate DEK
+        const dek = await CryptoGenerator.generateSymmetricKey();
+        //Generate key pair
+        const keyPair = await CryptoGenerator.generateAsymmetricKeyPair();
+        // wrap DEK with password
+        const wrappedDek = await CryptoEncryptor.wrapKeyWithPassword(dek, finishAccountRequest.password);
+        //wrap private key with dek
+        const wrappedPK = await CryptoEncryptor.encryptWithKey(keyPair.privateKeyBase64, dek);
+        finishAccountRequest.public_key = keyPair.publicKeyBase64;
+        finishAccountRequest.wrapped_private_key = {
             ciphertext: wrappedPK.ciphertextBase64,
             iv: wrappedPK.ivBase64,
         };
-        finishAccountRequest.kdf_salt = wrappedPK.saltBase64;
-        finishAccountRequest.kdf_params = {
-            algorithm: wrappedPK.kdfAlgorithm,
-            opsLimit: wrappedPK.argonOpsLimit,
-            memoryKb: wrappedPK.argonMemoryKb,
-            type: wrappedPK.argonType,
+
+        finishAccountRequest.wrapped_dek = {
+            ciphertext: wrappedDek.ciphertextBase64,
+            iv: wrappedDek.ivBase64,
+            salt: wrappedDek.saltBase64,
+            keyLengthBits: wrappedDek.keyLengthBits,
+            kdf: {
+                algorithm: wrappedDek.kdfAlgorithm,
+                opsLimit: wrappedDek.argonOpsLimit,
+                memoryKb: wrappedDek.argonMemoryKb,
+                type: wrappedDek.argonType,
+            },
         };
         finishAccountRequest.post(route('finish-account.perform'), {
             preserveScroll: true,
