@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('vault', function (Blueprint $table): void {
-            $table->uuid();
+            $table->id();
             $table->foreignUuid('user_id')->unique()->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
 
         Schema::create('key_wrappers', function (Blueprint $table): void {
-            $table->uuid();
+            $table->id();
 
             $table->foreignId('vault_id')
                 ->constrained('vault')

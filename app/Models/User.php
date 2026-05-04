@@ -46,6 +46,11 @@ class User extends Authenticatable implements HasPasskeys
         return $this->hasOne(MfaMethods::class, 'user_id', 'id');
     }
 
+    public function vault(): HasOne
+    {
+        return $this->hasOne(Vault::class, 'user_id', 'id');
+    }
+
     protected static function booted() : void
     {
         static::created(function ($user) {
