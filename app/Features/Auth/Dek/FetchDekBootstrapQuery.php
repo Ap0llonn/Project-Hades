@@ -10,8 +10,9 @@ final readonly class FetchDekBootstrapQuery
         public array $preferredWrapperTypes,
         public string $primaryAuthMethod,
         public string $mfaAuthMethod,
+        public string $passkeyId,
+        public string $passkeyCredentialId,
         public array $privateKeyWrapper,
     ) {
     }
 }
-

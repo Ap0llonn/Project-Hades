@@ -18,6 +18,7 @@ class KeyWrapper extends Model
         'prf_salt',
         'prf_params',
         'credential_id',
+        'passkey_uuid',
         'metadata',
         'revoked_at',
     ];

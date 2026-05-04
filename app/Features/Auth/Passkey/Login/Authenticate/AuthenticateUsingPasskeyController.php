@@ -37,6 +37,8 @@ class AuthenticateUsingPasskeyController
         $request->session()->regenerate();
         $request->session()->put('auth.primary_method', 'passkey');
         $request->session()->put('auth.mfa_method', '');
+        $request->session()->put('auth.passkey_credential_id', (string) ($result->credentialId ?? ''));
+        $request->session()->put('auth.passkey_id', (string) ($result->passkeyId ?? ''));
         $request->session()->forget([
             'auth.pending_user_id',
             'auth.pending_started_at',

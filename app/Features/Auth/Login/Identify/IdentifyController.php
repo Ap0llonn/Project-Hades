@@ -23,6 +23,8 @@ final class IdentifyController
             'auth.pending_mfa_method',
             'auth.primary_method',
             'auth.mfa_method',
+            'auth.passkey_credential_id',
+            'auth.passkey_id',
         ]);
 
         $request->session()->put([

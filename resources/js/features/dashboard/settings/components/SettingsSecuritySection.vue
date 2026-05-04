@@ -2,8 +2,11 @@
 import {computed, ref, watch} from 'vue';
 import {router, usePage} from '@inertiajs/vue3';
 import {route} from 'ziggy-js';
+import {base64URLStringToBuffer, bufferToBase64URLString} from '@simplewebauthn/browser';
 import {Bell, Fingerprint, KeyRound, Shield, Smartphone} from 'lucide-vue-next';
 import {useModal} from '../../../../shared/modal/index.ts';
+import {CryptoDecryptor, CryptoEncryptor} from '../../../../shared/utils';
+import {dekService} from '../../../../shared/services/dekService';
 
 const modal = useModal();
 const page = usePage();
@@ -402,7 +405,90 @@ const formatPasskeyTimestamp = (value) => {
     });
 };
 
-const createPasskey = async (name) => {
+const PASSKEY_PRF_SALT_BYTES = 32;
+
+const asPositiveIntegerOrUndefined = (value) => {
+    const parsedValue = Number(value);
+
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+        return undefined;
+    }
+
+    return parsedValue;
+};
+
+const asPrfResultBytes = (prfResult) => {
+    if (prfResult instanceof ArrayBuffer) {
+        return new Uint8Array(prfResult);
+    }
+
+    if (ArrayBuffer.isView(prfResult)) {
+        return new Uint8Array(prfResult.buffer, prfResult.byteOffset, prfResult.byteLength);
+    }
+
+    if (Array.isArray(prfResult)) {
+        return new Uint8Array(prfResult);
+    }
+
+    if (typeof prfResult === 'string' && prfResult !== '') {
+        return new Uint8Array(base64URLStringToBuffer(prfResult));
+    }
+
+    return null;
+};
+
+const extractPrfResultFromExtensions = (clientExtensionResults) => {
+    const prf = clientExtensionResults?.prf;
+    if (!prf || typeof prf !== 'object') {
+        return null;
+    }
+
+    const nestedResult = prf?.results?.first;
+    if (nestedResult !== undefined) {
+        return asPrfResultBytes(nestedResult);
+    }
+
+    if (prf?.first !== undefined) {
+        return asPrfResultBytes(prf.first);
+    }
+
+    return null;
+};
+
+const derivePasskeyPrfKeyBytes = async (credentialId, prfSaltBytes) => {
+    const publicKey = {
+        challenge: window.crypto.getRandomValues(new Uint8Array(32)),
+        rpId: window.location.hostname,
+        userVerification: 'required',
+        allowCredentials: [
+            {
+                id: base64URLStringToBuffer(credentialId),
+                type: 'public-key',
+            },
+        ],
+        extensions: {
+            prf: {
+                eval: {
+                    first: prfSaltBytes,
+                },
+            },
+        },
+    };
+
+    const assertion = await navigator.credentials.get({ publicKey });
+    if (!(assertion instanceof PublicKeyCredential)) {
+        throw new Error('Unable to evaluate PRF for this passkey.');
+    }
+
+    const prfBytes = extractPrfResultFromExtensions(assertion.getClientExtensionResults?.());
+    if (!prfBytes || prfBytes.length === 0) {
+        throw new Error('This passkey does not expose PRF output on this browser/device.');
+    }
+
+    return prfBytes;
+};
+
+const createPasskey = async (name, masterPassword) => {
     if (!passkeySupported.value) {
         modal.danger({
             title: 'Passkeys unavailable',
@@ -412,6 +498,31 @@ const createPasskey = async (name) => {
         });
         return;
     }
+
+    const bootstrap = await dekService.fetchBootstrap();
+    if (!bootstrap?.dek_wrapper || bootstrap.dek_wrapper.type !== 'password') {
+        throw new Error('Sign in with your master password before registering a passkey wrapper.');
+    }
+
+    const prfParams = bootstrap.dek_wrapper.prf_params && typeof bootstrap.dek_wrapper.prf_params === 'object'
+        ? bootstrap.dek_wrapper.prf_params
+        : {};
+    const keyLengthBits = asPositiveIntegerOrUndefined(prfParams.keyLengthBits);
+    const argonOpsLimit = asPositiveIntegerOrUndefined(prfParams.opsLimit);
+    const argonMemoryKb = asPositiveIntegerOrUndefined(prfParams.memoryKb);
+    const argonType = prfParams.type === 'Argon2i13' || prfParams.type === 'Argon2id13'
+        ? prfParams.type
+        : undefined;
+
+    const dekBytes = await CryptoDecryptor.decryptBytesWithPassword({
+        ciphertextBase64: bootstrap.dek_wrapper.ciphertext,
+        ivBase64: bootstrap.dek_wrapper.nonce,
+        saltBase64: bootstrap.dek_wrapper.prf_salt,
+        keyLengthBits,
+        argonOpsLimit,
+        argonMemoryKb,
+        argonType,
+    }, masterPassword);
 
     const optionsResponse = await fetch(route('settings.security.passkeys.options'), {
         credentials: 'same-origin',
@@ -425,7 +536,23 @@ const createPasskey = async (name) => {
     }
 
     const options = await optionsResponse.json();
+    options.extensions = {
+        ...(options.extensions ?? {}),
+        prf: {},
+    };
+
     const registrationResponse = await window.startRegistration({ optionsJSON: options });
+    const credentialId = typeof registrationResponse?.id === 'string'
+        ? registrationResponse.id.trim()
+        : '';
+
+    if (credentialId === '') {
+        throw new Error('Passkey registration returned an invalid credential id.');
+    }
+
+    const prfSaltBytes = window.crypto.getRandomValues(new Uint8Array(PASSKEY_PRF_SALT_BYTES));
+    const prfKeyBytes = await derivePasskeyPrfKeyBytes(credentialId, prfSaltBytes);
+    const wrappedDekWithPrf = await CryptoEncryptor.encryptBytesWithKey(dekBytes, prfKeyBytes);
 
     await new Promise((resolve, reject) => {
         router.post(
@@ -434,6 +561,12 @@ const createPasskey = async (name) => {
                 name,
                 options: JSON.stringify(options),
                 passkey: JSON.stringify(registrationResponse),
+                wrapped_dek: {
+                    ciphertext: wrappedDekWithPrf.ciphertextBase64,
+                    iv: wrappedDekWithPrf.ivBase64,
+                    prf_salt: bufferToBase64URLString(prfSaltBytes),
+                    prf_output_length: prfKeyBytes.length,
+                },
             },
             {
                 preserveScroll: true,
@@ -473,15 +606,28 @@ const openPasskeyRegistrationModal = () => {
                 placeholder: 'This device',
                 required: false,
             },
+            {
+                name: 'masterPassword',
+                label: 'Master password',
+                type: 'password',
+                autocomplete: 'current-password',
+                placeholder: 'Enter your master password',
+                required: true,
+            },
         ],
         onSubmit: async (values) => {
             const passkeyName = values.passkeyName.trim();
+            const masterPassword = values.masterPassword.trim();
 
-            await createPasskey(passkeyName);
+            if (masterPassword === '') {
+                throw new Error('Master password is required.');
+            }
+
+            await createPasskey(passkeyName, masterPassword);
 
             modal.confirmation({
                 title: 'Passkey registered',
-                message: 'You can now use this passkey to sign in.',
+                message: 'You can now use this passkey to sign in and unlock your DEK wrapper.',
                 confirmLabel: 'Close',
                 cancelLabel: null,
             });

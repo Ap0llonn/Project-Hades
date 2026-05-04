@@ -6,7 +6,7 @@ final readonly class DeletePasskeyCommand
 {
     public function __construct(
         public string $userId,
-        public int $passkeyId,
+        public string $passkeyId,
     ) {
     }
 }

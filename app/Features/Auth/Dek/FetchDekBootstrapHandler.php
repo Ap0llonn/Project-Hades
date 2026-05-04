@@ -21,6 +21,26 @@ final class FetchDekBootstrapHandler
 
         $selectedWrapper = null;
         foreach ($query->preferredWrapperTypes as $type) {
+            if ($type === 'passkey' && $query->passkeyId !== '') {
+                $selectedWrapper = $vault->keyWrappers
+                    ->where('type', 'passkey')
+                    ->firstWhere('passkey_uuid', $query->passkeyId);
+
+                if ($selectedWrapper !== null) {
+                    break;
+                }
+            }
+
+            if ($type === 'passkey' && $query->passkeyCredentialId !== '') {
+                $selectedWrapper = $vault->keyWrappers
+                    ->where('type', 'passkey')
+                    ->firstWhere('credential_id', $query->passkeyCredentialId);
+
+                if ($selectedWrapper !== null) {
+                    break;
+                }
+            }
+
             $selectedWrapper = $vault->keyWrappers->firstWhere('type', $type);
             if ($selectedWrapper !== null) {
                 break;

@@ -25,6 +25,8 @@ final class DekController
             preferredWrapperTypes: $preferredWrapperTypes,
             primaryAuthMethod: $authPrimaryMethod,
             mfaAuthMethod: $authMfaMethod,
+            passkeyId: (string) $request->session()->get('auth.passkey_id', ''),
+            passkeyCredentialId: (string) $request->session()->get('auth.passkey_credential_id', ''),
             privateKeyWrapper: is_array($user->private_key_wrapper) ? $user->private_key_wrapper : [],
         ));
 

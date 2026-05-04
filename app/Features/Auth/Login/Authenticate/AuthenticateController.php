@@ -33,6 +33,8 @@ final class AuthenticateController
         $request->session()->regenerate();
         $request->session()->put('auth.primary_method', $pendingPrimaryMethod);
         $request->session()->put('auth.mfa_method', $pendingMfaMethod);
+        $request->session()->put('auth.passkey_credential_id', '');
+        $request->session()->put('auth.passkey_id', '');
         $this->clearPendingState($request);
 
         return redirect()->intended(route('dashboard'));

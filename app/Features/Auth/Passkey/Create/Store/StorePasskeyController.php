@@ -21,6 +21,7 @@ class StorePasskeyController
             hostName: (string) $request->getHost(),
             appUrl: (string) $request->getSchemeAndHttpHost(),
             name: $payload['name'] ?? null,
+            wrappedDek: $payload['wrapped_dek'],
         ));
 
         return redirect()->route('settings')->with('success', 'Passkey added.');

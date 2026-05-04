@@ -29,7 +29,7 @@ class SettingsController
                 ->orderByDesc('created_at')
                 ->get()
                 ->map(fn (Passkey $passkey): array => [
-                    'id' => $passkey->id,
+                    'id' => (string) ($passkey->uuid ?? $passkey->id),
                     'name' => $passkey->name,
                     'created_at' => optional($passkey->created_at)?->toIso8601String(),
                     'last_used_at' => optional($passkey->last_used_at)?->toIso8601String(),

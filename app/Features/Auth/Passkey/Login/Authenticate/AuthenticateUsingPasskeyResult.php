@@ -8,6 +8,8 @@ final readonly class AuthenticateUsingPasskeyResult
 {
     public function __construct(
         public ?User $user,
+        public ?string $credentialId,
+        public ?string $passkeyId,
     ) {
     }
 }

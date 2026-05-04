@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class DeletePasskeyController
 {
-    public function __invoke(Request $request, CommandBus $commandBus, int $passkeyId): RedirectResponse
+    public function __invoke(Request $request, CommandBus $commandBus, string $passkeyId): RedirectResponse
     {
         $user = $request->user();
         abort_if($user === null, 403);
