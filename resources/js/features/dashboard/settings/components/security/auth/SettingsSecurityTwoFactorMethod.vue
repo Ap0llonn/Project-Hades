@@ -1,0 +1,443 @@
+<script setup>
+import {computed, ref, watch} from 'vue';
+import {router, usePage} from '@inertiajs/vue3';
+import {route} from 'ziggy-js';
+import {Bell, Smartphone} from 'lucide-vue-next';
+import {useModal} from '../../../../../../shared/modal/index.ts';
+
+const modal = useModal();
+const page = usePage();
+
+const settingProps = defineProps({
+    security: {
+        type: Object,
+        default: () => ({
+            mfa_activated: false,
+            totp_enabled: false,
+            email_enabled: false,
+            passkeys: [],
+        }),
+    },
+});
+
+const mfaTotpEnabled = ref(false);
+const mfaEmailEnabled = ref(false);
+const twoFactorEnabled = computed(() => mfaTotpEnabled.value || mfaEmailEnabled.value);
+
+watch(
+    () => settingProps.security,
+    (value) => {
+        mfaTotpEnabled.value = Boolean(value?.totp_enabled);
+        mfaEmailEnabled.value = Boolean(value?.email_enabled);
+    },
+    {immediate: true, deep: true},
+);
+
+const openTotpSetupModal = (payload) => {
+    modal.form({
+        title: 'Set up authenticator app',
+        message: 'Scan this QR code, then enter the 6-digit code from your authenticator app.',
+        qrSvg: payload.qrSvg,
+        confirmLabel: 'Activate',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'setupKey',
+                label: 'Setup key',
+                required: true,
+                initialValue: payload.setupKey ?? '',
+            },
+            {
+                name: 'verificationCode',
+                label: 'Verification code',
+                placeholder: '123456',
+                autocomplete: 'one-time-code',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const verificationCode = values.verificationCode.trim();
+
+            if (!/^\d{6}$/.test(verificationCode)) {
+                throw new Error('Verification code must be exactly 6 digits.');
+            }
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.totp.verify-setup'),
+                    {
+                        code: verificationCode,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.code ?? 'Unable to verify authenticator code.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('TOTP verification was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaTotpEnabled.value = true;
+
+            modal.confirmation({
+                title: 'Authenticator app activated',
+                message: 'TOTP is now configured for your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const openTotpRemovalModal = () => {
+    modal.form({
+        title: 'Remove authenticator app',
+        message: 'Enter your master password to remove this authenticator method.',
+        confirmLabel: 'Remove',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'masterPassword',
+                label: 'Master password',
+                type: 'password',
+                autocomplete: 'current-password',
+                placeholder: 'Enter your master password',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const masterPassword = values.masterPassword.trim();
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.totp.disable'),
+                    {
+                        masterPassword,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.masterPassword ?? 'Unable to remove authenticator app.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('Authenticator removal was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaTotpEnabled.value = false;
+
+            modal.confirmation({
+                title: 'Authenticator app removed',
+                message: 'The authenticator app has been removed from your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const handleTwoFactorToggle = () => {
+    if (!twoFactorEnabled.value) {
+        modal.confirmation({
+            title: 'Enable two-factor authentication',
+            message: 'Set up at least one method below to enable MFA on your account.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+        return;
+    }
+
+    if (mfaTotpEnabled.value && !mfaEmailEnabled.value) {
+        openTotpRemovalModal();
+        return;
+    }
+
+    if (mfaEmailEnabled.value && !mfaTotpEnabled.value) {
+        openEmailRemovalModal();
+        return;
+    }
+
+    modal.confirmation({
+        title: 'Multiple MFA methods enabled',
+        message: 'Remove Authenticator app and Email code below to fully disable MFA.',
+        confirmLabel: 'Close',
+        cancelLabel: null,
+    });
+};
+
+const handleTotpAction = () => {
+    if (mfaTotpEnabled.value) {
+        openTotpRemovalModal();
+        return;
+    }
+
+    router.post(route('mfa.totp.setup-qr'), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (visitPage) => {
+            const payload = visitPage?.flash?.totpSetup
+                ?? visitPage?.props?.flash?.totpSetup
+                ?? page.props?.flash?.totpSetup;
+
+            if (!payload || !payload.qrSvg) {
+                modal.danger({
+                    title: 'TOTP setup unavailable',
+                    message: 'Unable to generate TOTP setup QR.',
+                    confirmLabel: 'Close',
+                    cancelLabel: null,
+                });
+                return;
+            }
+
+            openTotpSetupModal(payload);
+        },
+        onError: (errors) => {
+            modal.danger({
+                title: 'TOTP setup unavailable',
+                message: errors.code ?? 'Unable to generate TOTP setup QR.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const openEmailSetupModal = () => {
+    modal.form({
+        title: 'Set up email 2FA',
+        message: 'Check your email and enter the 6-digit verification code.',
+        confirmLabel: 'Activate',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'verificationCode',
+                label: 'Verification code',
+                placeholder: '123456',
+                autocomplete: 'one-time-code',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const verificationCode = values.verificationCode.trim();
+
+            if (!/^\d{6}$/.test(verificationCode)) {
+                throw new Error('Verification code must be exactly 6 digits.');
+            }
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.email.verify'),
+                    {
+                        code: verificationCode,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.code ?? 'Unable to verify authenticator code.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('email verification was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaEmailEnabled.value = true;
+
+            modal.confirmation({
+                title: 'Email MFA activated',
+                message: 'Email MFA is now configured for your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const openEmailRemovalModal = () => {
+    modal.form({
+        title: 'Remove email 2FA',
+        message: 'Enter your master password to remove email verification from your account.',
+        confirmLabel: 'Remove',
+        cancelLabel: 'Cancel',
+        fields: [
+            {
+                name: 'masterPassword',
+                label: 'Master password',
+                type: 'password',
+                autocomplete: 'current-password',
+                placeholder: 'Enter your master password',
+                required: true,
+            },
+        ],
+        onSubmit: async (values) => {
+            const masterPassword = values.masterPassword.trim();
+
+            await new Promise((resolve, reject) => {
+                router.post(
+                    route('mfa.email.disable'),
+                    {
+                        masterPassword,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onSuccess: () => resolve(),
+                        onError: (errors) => {
+                            reject(new Error(errors.masterPassword ?? 'Unable to remove email 2FA.'));
+                        },
+                        onCancel: () => {
+                            reject(new Error('Email 2FA removal was cancelled.'));
+                        },
+                    },
+                );
+            });
+
+            mfaEmailEnabled.value = false;
+
+            modal.confirmation({
+                title: 'Email 2FA removed',
+                message: 'Email verification has been removed from your account.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+
+const handleEmailAction = () => {
+    if (mfaEmailEnabled.value) {
+        openEmailRemovalModal();
+        return;
+    }
+
+    router.post(route('mfa.email.generate'), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            openEmailSetupModal();
+        },
+        onError: (errors) => {
+            modal.danger({
+                title: 'Email setup unavailable',
+                message: errors.code ?? 'Unable to send email verification code.',
+                confirmLabel: 'Close',
+                cancelLabel: null,
+            });
+        },
+    });
+};
+</script>
+
+<template>
+    <div class="py-5">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                    <Smartphone class="h-6 w-6"/>
+                </div>
+                <div>
+                    <p class="text-2xl font-semibold tracking-tight text-on-surface">Two-Factor Authentication (2FA)</p>
+                    <p class="mt-1 text-sm text-on-surface-variant">Add an extra layer of security with 2FA</p>
+                </div>
+            </div>
+            <button
+                type="button"
+                class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
+                :class="twoFactorEnabled ? 'bg-primary' : 'bg-surface-container-high'"
+                @click="handleTwoFactorToggle"
+            >
+                <span
+                    class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
+                    :class="twoFactorEnabled ? 'translate-x-7' : 'translate-x-1'"
+                />
+            </button>
+        </div>
+
+        <div v-if="twoFactorEnabled" class="mt-4 border-t border-outline-variant pt-4">
+            <p class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Two-factor methods</p>
+
+            <article class="flex items-start justify-between gap-4 border-b border-outline-variant py-4">
+                <div class="flex min-w-0 items-start gap-3">
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary-container text-primary">
+                        <Smartphone class="h-5 w-5"/>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <p class="font-semibold text-on-surface">Authenticator app</p>
+                            <span
+                                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                                :class="mfaTotpEnabled
+                                    ? 'bg-secondary-container text-primary'
+                                    : 'bg-surface-container-high text-on-surface-variant'"
+                            >
+                                {{ mfaTotpEnabled ? 'Configured' : 'Not configured' }}
+                            </span>
+                        </div>
+                        <p class="mt-1 text-sm text-on-surface-variant">
+                            Use an authenticator app or browser extension to get verification codes.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="shrink-0 rounded-md border px-3 py-1 text-sm font-medium transition-colors"
+                    :class="mfaTotpEnabled
+                        ? 'border-red-500 text-red-600 hover:bg-red-600 hover:text-white'
+                        : 'border-primary text-primary hover:bg-primary hover:text-on-primary'"
+                    @click="handleTotpAction"
+                >
+                    {{ mfaTotpEnabled ? 'Remove' : 'Setup' }}
+                </button>
+            </article>
+
+            <article class="flex items-start justify-between gap-4 pt-4">
+                <div class="flex min-w-0 items-start gap-3">
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant">
+                        <Bell class="h-5 w-5"/>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <p class="font-semibold text-on-surface">Email code</p>
+                            <span
+                                class="rounded-full px-2 py-0.5 text-xs font-medium"
+                                :class="mfaEmailEnabled
+                                    ? 'bg-secondary-container text-primary'
+                                    : 'bg-surface-container-high text-on-surface-variant'"
+                            >
+                                {{ mfaEmailEnabled ? 'Configured' : 'Not configured' }}
+                            </span>
+                        </div>
+                        <p class="mt-1 text-sm text-on-surface-variant">
+                            Receive one-time codes by email when additional verification is required.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="shrink-0 rounded-md border px-3 py-1 text-sm font-medium transition-colors"
+                    :class="mfaEmailEnabled
+                        ? 'border-red-500 text-red-600 hover:bg-red-600 hover:text-white'
+                        : 'border-primary text-primary hover:bg-primary hover:text-on-primary'"
+                    @click="handleEmailAction"
+                >
+                    {{ mfaEmailEnabled ? 'Remove' : 'Setup' }}
+                </button>
+            </article>
+        </div>
+    </div>
+</template>
+
