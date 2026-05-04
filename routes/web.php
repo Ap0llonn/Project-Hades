@@ -34,6 +34,7 @@ Route::domain('vault.vaultguardian.test')
         require base_path('routes/Auth/FinishAccount/register.php');
         require base_path('routes/Auth/login.php');
         require base_path('routes/Auth/dek.php');
+        require base_path('routes/Auth/oauth.php');
 
         require base_path('routes/Auth/logout.php');
 

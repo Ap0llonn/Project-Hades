@@ -12,7 +12,9 @@
         "ecotone/laravel": "^1.308",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.0",
+        "laravel/socialite": "^5.23",
         "laravel/tinker": "^3.0",
+        "socialiteproviders/apple": "^5.10",
         "spatie/laravel-passkeys": "^1.7",
         "spomky-labs/otphp": "^11.4",
         "tightenco/ziggy": "^2.6"

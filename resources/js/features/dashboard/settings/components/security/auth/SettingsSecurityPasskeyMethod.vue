@@ -1,6 +1,6 @@
 <script setup>
 import {computed, ref, watch} from 'vue';
-import {router} from '@inertiajs/vue3';
+import {router, usePage} from '@inertiajs/vue3';
 import {route} from 'ziggy-js';
 import {base64URLStringToBuffer, bufferToBase64URLString} from '@simplewebauthn/browser';
 import {Shield} from 'lucide-vue-next';
@@ -9,6 +9,7 @@ import {CryptoDecryptor, CryptoEncryptor} from '../../../../../../shared/utils';
 import {dekService} from '../../../../../../shared/services/dekService';
 
 const modal = useModal();
+const page = usePage();
 
 const settingProps = defineProps({
     security: {
@@ -25,6 +26,7 @@ const settingProps = defineProps({
 const passkeys = ref([]);
 const passkeySupported = ref(typeof window.browserSupportsWebAuthn === 'function' && window.browserSupportsWebAuthn());
 const hasPasskeys = computed(() => passkeys.value.length > 0);
+const autoPromptTriggered = ref(false);
 
 watch(
     () => settingProps.security,
@@ -149,29 +151,58 @@ const createPasskey = async (name, masterPassword) => {
     }
 
     const bootstrap = await dekService.fetchBootstrap();
-    if (!bootstrap?.dek_wrapper || bootstrap.dek_wrapper.type !== 'password') {
-        throw new Error('Sign in with your master password before registering a passkey wrapper.');
+    if (!bootstrap?.dek_wrapper) {
+        throw new Error('No DEK wrapper is available for this account.');
     }
 
-    const prfParams = bootstrap.dek_wrapper.prf_params && typeof bootstrap.dek_wrapper.prf_params === 'object'
-        ? bootstrap.dek_wrapper.prf_params
-        : {};
-    const keyLengthBits = asPositiveIntegerOrUndefined(prfParams.keyLengthBits);
-    const argonOpsLimit = asPositiveIntegerOrUndefined(prfParams.opsLimit);
-    const argonMemoryKb = asPositiveIntegerOrUndefined(prfParams.memoryKb);
-    const argonType = prfParams.type === 'Argon2i13' || prfParams.type === 'Argon2id13'
-        ? prfParams.type
-        : undefined;
+    let dekBytes;
 
-    const dekBytes = await CryptoDecryptor.decryptBytesWithPassword({
-        ciphertextBase64: bootstrap.dek_wrapper.ciphertext,
-        ivBase64: bootstrap.dek_wrapper.nonce,
-        saltBase64: bootstrap.dek_wrapper.prf_salt,
-        keyLengthBits,
-        argonOpsLimit,
-        argonMemoryKb,
-        argonType,
-    }, masterPassword);
+    if (bootstrap.dek_wrapper.type === 'password') {
+        if (masterPassword === '') {
+            throw new Error('Master password is required.');
+        }
+
+        const prfParams = bootstrap.dek_wrapper.prf_params && typeof bootstrap.dek_wrapper.prf_params === 'object'
+            ? bootstrap.dek_wrapper.prf_params
+            : {};
+        const keyLengthBits = asPositiveIntegerOrUndefined(prfParams.keyLengthBits);
+        const argonOpsLimit = asPositiveIntegerOrUndefined(prfParams.opsLimit);
+        const argonMemoryKb = asPositiveIntegerOrUndefined(prfParams.memoryKb);
+        const argonType = prfParams.type === 'Argon2i13' || prfParams.type === 'Argon2id13'
+            ? prfParams.type
+            : undefined;
+
+        dekBytes = await CryptoDecryptor.decryptBytesWithPassword({
+            ciphertextBase64: bootstrap.dek_wrapper.ciphertext,
+            ivBase64: bootstrap.dek_wrapper.nonce,
+            saltBase64: bootstrap.dek_wrapper.prf_salt,
+            keyLengthBits,
+            argonOpsLimit,
+            argonMemoryKb,
+            argonType,
+        }, masterPassword);
+    } else if (bootstrap.dek_wrapper.type === 'passkey') {
+        const credentialId = typeof bootstrap.dek_wrapper.credential_id === 'string'
+            ? bootstrap.dek_wrapper.credential_id.trim()
+            : '';
+        const prfSalt = typeof bootstrap.dek_wrapper.prf_salt === 'string'
+            ? bootstrap.dek_wrapper.prf_salt.trim()
+            : '';
+
+        if (credentialId === '' || prfSalt === '') {
+            throw new Error('Current passkey wrapper is missing PRF parameters.');
+        }
+
+        const prfSaltBytes = new Uint8Array(base64URLStringToBuffer(prfSalt));
+        const prfKeyBytes = await derivePasskeyPrfKeyBytes(credentialId, prfSaltBytes);
+
+        dekBytes = await CryptoDecryptor.decryptBytesWithKey({
+            ciphertextBase64: bootstrap.dek_wrapper.ciphertext,
+            ivBase64: bootstrap.dek_wrapper.nonce,
+        }, prfKeyBytes);
+    } else {
+        throw new Error('Current authentication method cannot register a new passkey wrapper.');
+    }
 
     const optionsResponse = await fetch(route('settings.security.passkeys.options'), {
         credentials: 'same-origin',
@@ -261,16 +292,12 @@ const openPasskeyRegistrationModal = () => {
                 type: 'password',
                 autocomplete: 'current-password',
                 placeholder: 'Enter your master password',
-                required: true,
+                required: false,
             },
         ],
         onSubmit: async (values) => {
             const passkeyName = values.passkeyName.trim();
             const masterPassword = values.masterPassword.trim();
-
-            if (masterPassword === '') {
-                throw new Error('Master password is required.');
-            }
 
             await createPasskey(passkeyName, masterPassword);
 
@@ -283,6 +310,19 @@ const openPasskeyRegistrationModal = () => {
         },
     });
 };
+
+watch(
+    () => page.props?.security?.oauth_passkey_prompt,
+    (value) => {
+        if (autoPromptTriggered.value || !value || !passkeySupported.value) {
+            return;
+        }
+
+        autoPromptTriggered.value = true;
+        openPasskeyRegistrationModal();
+    },
+    { immediate: true },
+);
 
 const removePasskey = (passkeyId) => {
     modal.danger({
@@ -370,4 +410,3 @@ const removePasskey = (passkeyId) => {
         </div>
     </div>
 </template>
-

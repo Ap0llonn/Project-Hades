@@ -93,9 +93,10 @@ export function toBase64(bytes: Uint8Array | ArrayBuffer): string {
 
 export function fromBase64(base64Value: string): CryptoBytes {
     const maybeBuffer = (globalThis as { Buffer?: { from: (value: string, encoding: string) => Uint8Array } }).Buffer;
+    const normalizedBase64 = normalizeBase64Value(base64Value);
 
     if (typeof atob === 'function') {
-        const binary = atob(base64Value);
+        const binary = atob(normalizedBase64);
         const bytes = new Uint8Array(binary.length);
 
         for (let index = 0; index < binary.length; index += 1) {
@@ -106,10 +107,22 @@ export function fromBase64(base64Value: string): CryptoBytes {
     }
 
     if (maybeBuffer) {
-        return asCryptoBytes(new Uint8Array(maybeBuffer.from(base64Value, 'base64')));
+        return asCryptoBytes(new Uint8Array(maybeBuffer.from(normalizedBase64, 'base64')));
     }
 
     throw new Error('No base64 decoder available in this environment.');
+}
+
+function normalizeBase64Value(value: string): string {
+    const compactValue = value.replace(/\s+/g, '');
+    const standardAlphabet = compactValue.replace(/-/g, '+').replace(/_/g, '/');
+    const remainder = standardAlphabet.length % 4;
+
+    if (remainder === 0) {
+        return standardAlphabet;
+    }
+
+    return standardAlphabet.padEnd(standardAlphabet.length + (4 - remainder), '=');
 }
 
 export function normalizeBytes(value: BinarySource, fieldName: string): CryptoBytes {

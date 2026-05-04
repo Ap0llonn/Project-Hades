@@ -11,6 +11,8 @@ const settingProps = defineProps({
             totp_enabled: false,
             email_enabled: false,
             passkeys: [],
+            oauth_providers: [],
+            oauth_passkey_prompt: null,
         }),
     },
 });
@@ -19,8 +21,7 @@ const settingProps = defineProps({
 <template>
     <div class="space-y-8">
         <SettingsSecurityAuthenticationSection :security="settingProps.security" />
-        <SettingsSecurityOAuthSection />
+        <SettingsSecurityOAuthSection :security="settingProps.security" />
         <SettingsSecuritySessionsSection />
     </div>
 </template>
-

@@ -2,9 +2,11 @@
 
 namespace App\Features\Auth\Passkey\Create\Store;
 
+use App\Models\OAuthAccount;
 use App\Models\User;
 use Ecotone\Modelling\Attribute\CommandHandler;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\LaravelPasskeys\Actions\StorePasskeyAction;
@@ -107,6 +109,20 @@ class StorePasskeyHandler
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                if (Schema::hasTable('oauth_accounts')) {
+                    OAuthAccount::query()
+                        ->where('user_id', (string) $user->id)
+                        ->whereNull('unlinked_at')
+                        ->get()
+                        ->each(function (OAuthAccount $account): void {
+                            $metadata = is_array($account->metadata) ? $account->metadata : [];
+                            $metadata['requires_passkey_setup'] = false;
+
+                            $account->metadata = $metadata;
+                            $account->save();
+                        });
+                }
             });
         } catch (Throwable $exception) {
             if ($exception instanceof ValidationException) {

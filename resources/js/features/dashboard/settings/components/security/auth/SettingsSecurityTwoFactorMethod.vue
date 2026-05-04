@@ -1,5 +1,5 @@
 <script setup>
-import {computed, ref, watch} from 'vue';
+import {ref, watch} from 'vue';
 import {router, usePage} from '@inertiajs/vue3';
 import {route} from 'ziggy-js';
 import {Bell, Smartphone} from 'lucide-vue-next';
@@ -22,7 +22,6 @@ const settingProps = defineProps({
 
 const mfaTotpEnabled = ref(false);
 const mfaEmailEnabled = ref(false);
-const twoFactorEnabled = computed(() => mfaTotpEnabled.value || mfaEmailEnabled.value);
 
 watch(
     () => settingProps.security,
@@ -142,35 +141,6 @@ const openTotpRemovalModal = () => {
                 cancelLabel: null,
             });
         },
-    });
-};
-
-const handleTwoFactorToggle = () => {
-    if (!twoFactorEnabled.value) {
-        modal.confirmation({
-            title: 'Enable two-factor authentication',
-            message: 'Set up at least one method below to enable MFA on your account.',
-            confirmLabel: 'Close',
-            cancelLabel: null,
-        });
-        return;
-    }
-
-    if (mfaTotpEnabled.value && !mfaEmailEnabled.value) {
-        openTotpRemovalModal();
-        return;
-    }
-
-    if (mfaEmailEnabled.value && !mfaTotpEnabled.value) {
-        openEmailRemovalModal();
-        return;
-    }
-
-    modal.confirmation({
-        title: 'Multiple MFA methods enabled',
-        message: 'Remove Authenticator app and Email code below to fully disable MFA.',
-        confirmLabel: 'Close',
-        cancelLabel: null,
     });
 };
 
@@ -342,7 +312,7 @@ const handleEmailAction = () => {
 
 <template>
     <div class="py-5">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
             <div class="flex items-center gap-4">
                 <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
                     <Smartphone class="h-6 w-6"/>
@@ -352,20 +322,9 @@ const handleEmailAction = () => {
                     <p class="mt-1 text-sm text-on-surface-variant">Add an extra layer of security with 2FA</p>
                 </div>
             </div>
-            <button
-                type="button"
-                class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors"
-                :class="twoFactorEnabled ? 'bg-primary' : 'bg-surface-container-high'"
-                @click="handleTwoFactorToggle"
-            >
-                <span
-                    class="inline-block h-6 w-6 transform rounded-full bg-white transition-transform"
-                    :class="twoFactorEnabled ? 'translate-x-7' : 'translate-x-1'"
-                />
-            </button>
         </div>
 
-        <div v-if="twoFactorEnabled" class="mt-4 border-t border-outline-variant pt-4">
+        <div class="mt-4 border-t border-outline-variant pt-4">
             <p class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-surface-variant">Two-factor methods</p>
 
             <article class="flex items-start justify-between gap-4 border-b border-outline-variant py-4">
@@ -440,4 +399,3 @@ const handleEmailAction = () => {
         </div>
     </div>
 </template>
-

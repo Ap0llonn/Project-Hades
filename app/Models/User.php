@@ -51,6 +51,11 @@ class User extends Authenticatable implements HasPasskeys
         return $this->hasOne(Vault::class, 'user_id', 'id');
     }
 
+    public function oauthAccounts(): HasMany
+    {
+        return $this->hasMany(OAuthAccount::class, 'user_id', 'id');
+    }
+
     protected static function booted() : void
     {
         static::created(function ($user) {
