@@ -68,6 +68,18 @@ export class CryptoDecryptor {
         return bytesToUtf8(plaintextBytes);
     }
 
+    /**
+     * Decrypt a password/value using the unlocked DEK.
+     * This is intended for vault item password fields.
+     */
+    static async decryptPasswordWithDek(
+        payload: { ciphertextBase64: string; ivBase64: string },
+        dek: BinarySource,
+    ): Promise<string> {
+        const plaintextBytes = await this.decryptBytesWithKey(payload, dek);
+        return bytesToUtf8(plaintextBytes);
+    }
+
     static async unwrapPrivateKey(wrapperPayload: EncryptedPayload, password: string): Promise<string> {
         return this.decryptWithPassword(wrapperPayload, password);
     }

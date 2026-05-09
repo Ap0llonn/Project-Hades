@@ -7,6 +7,7 @@ import 'aos/dist/aos.css';
 import { createApp, Fragment, h } from 'vue';
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import ModalHost from './shared/components/ModalHost.vue';
+import { ensureAuthenticatedVaultSession } from './shared/services/vaultSessionBootstrap';
 
 const THEME_STORAGE_KEY = 'pm-theme';
 const THEME_TRANSITION_CLASS = 'theme-transition';
@@ -92,6 +93,11 @@ createInertiaApp({
 
         router.on('finish', () => {
             AOS.refreshHard();
+        });
+
+        ensureAuthenticatedVaultSession(props.initialPage);
+        router.on('navigate', (event) => {
+            ensureAuthenticatedVaultSession(event.detail.page);
         });
     },
     progress: {

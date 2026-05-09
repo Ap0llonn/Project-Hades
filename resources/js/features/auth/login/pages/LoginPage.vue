@@ -1,10 +1,12 @@
 <script setup>
-import {Head, useForm} from '@inertiajs/vue3';
-import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
+import {Head, useForm, usePage} from '@inertiajs/vue3';
+import { Apple, Chrome, Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
+import { LOGIN_MASTER_PASSWORD_STORAGE_KEY } from '../../../../shared/services/vaultSessionBootstrap';
 
+const page = usePage();
 const showPassword = ref(false);
 const passkeyError = ref('');
 const passkeyProcessing = ref(false);
@@ -15,9 +17,19 @@ const loginRequest = useForm({
     password: '',
 });
 const errorMessage = computed(() => loginRequest.errors.email);
+const oauthError = computed(() => (page.props?.flash?.error ?? ''));
 
 function handleSubmit() {
-    loginRequest.post(route('login.perform'));
+    const passwordValue = String(loginRequest.password ?? '');
+    if (passwordValue !== '') {
+        sessionStorage.setItem(LOGIN_MASTER_PASSWORD_STORAGE_KEY, passwordValue);
+    }
+
+    loginRequest.post(route('login.perform'), {
+        onError: () => {
+            sessionStorage.removeItem(LOGIN_MASTER_PASSWORD_STORAGE_KEY);
+        },
+    });
 }
 
 async function handlePasskeyAuthentication() {
@@ -68,6 +80,10 @@ async function handlePasskeyAuthentication() {
     } finally {
         passkeyProcessing.value = false;
     }
+}
+
+function startOAuth(provider) {
+    window.location.assign(route('oauth.login.redirect', { provider }));
 }
 </script>
 
@@ -190,18 +206,40 @@ async function handlePasskeyAuthentication() {
                         {{ loginRequest.processing ? 'Signing In...' : 'Sign In' }}
                     </button>
 
-                    <button
-                        type="button"
-                        :disabled="!passkeySupported || passkeyProcessing"
-                        class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
-                        data-aos="fade-up"
-                        data-aos-delay="500"
-                        @click="handlePasskeyAuthentication"
-                    >
-                        <Shield class="h-5 w-5" />
-                        {{ passkeyProcessing ? 'Checking Passkey...' : 'Sign In with Passkey' }}
-                    </button>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <button
+                            type="button"
+                            :disabled="!passkeySupported || passkeyProcessing"
+                            class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
+                            data-aos="fade-up"
+                            data-aos-delay="500"
+                            @click="handlePasskeyAuthentication"
+                        >
+                            <Shield class="h-5 w-5" />
+                            {{ passkeyProcessing ? 'Checking...' : 'Passkey' }}
+                        </button>
+
+                        <button
+                            type="button"
+                            class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50"
+                            style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
+                            @click="startOAuth('google')"
+                        >
+                            <Chrome class="h-5 w-5" />
+                            Google
+                        </button>
+
+                        <button
+                            type="button"
+                            class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50"
+                            style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
+                            @click="startOAuth('apple')"
+                        >
+                            <Apple class="h-5 w-5" />
+                            Apple
+                        </button>
+                    </div>
 
                     <p
                         v-if="passkeyError"
@@ -210,6 +248,13 @@ async function handlePasskeyAuthentication() {
                         data-aos-delay="540"
                     >
                         {{ passkeyError }}
+                    </p>
+
+                    <p
+                        v-if="oauthError"
+                        class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+                    >
+                        {{ oauthError }}
                     </p>
 
                     <p class="text-center text-gray-600" style="font-family: 'DM Sans', sans-serif;" data-aos="fade-up" data-aos-delay="580">

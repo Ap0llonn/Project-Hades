@@ -56,7 +56,7 @@ final class DekController
         }
 
         if ($primaryMethod === 'oauth') {
-            return ['oauth'];
+            return ['oauth', 'passkey'];
         }
 
         if ($primaryMethod === 'password' && $mfaMethod === 'recovery') {
