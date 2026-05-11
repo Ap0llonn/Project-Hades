@@ -1,0 +1,17 @@
+.git
+.idea
+node_modules
+vendor
+
+.env
+.env.*
+docker/dev/.env
+docker/prod/.env
+
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/testing
+storage/framework/views
+
+public/hot
