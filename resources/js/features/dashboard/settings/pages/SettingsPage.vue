@@ -17,7 +17,14 @@ const activeSection = ref('profile');
 const settingProps = defineProps({
     security: {
         type: Object,
-        required: true
+        default: () => ({
+            mfa_activated: false,
+            totp_enabled: false,
+            email_enabled: false,
+            passkeys: [],
+            oauth_providers: [],
+            oauth_passkey_prompt: null,
+        }),
     }
 })
 

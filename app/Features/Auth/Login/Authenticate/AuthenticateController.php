@@ -13,6 +13,8 @@ final class AuthenticateController
     {
         $pendingUserId = (string) $request->session()->get('auth.pending_user_id', '');
         $pendingMfaVerified = (bool) $request->session()->get('auth.pending_mfa_verified', false);
+        $pendingPrimaryMethod = (string) $request->session()->get('auth.pending_primary_method', 'password');
+        $pendingMfaMethod = (string) $request->session()->get('auth.pending_mfa_method', '');
 
         if ($pendingUserId === '' || !$pendingMfaVerified) {
             Log::info('error 1');
@@ -29,6 +31,10 @@ final class AuthenticateController
         Log::info('user login');
         Auth::Login($authenticateResult->user);
         $request->session()->regenerate();
+        $request->session()->put('auth.primary_method', $pendingPrimaryMethod);
+        $request->session()->put('auth.mfa_method', $pendingMfaMethod);
+        $request->session()->put('auth.passkey_credential_id', '');
+        $request->session()->put('auth.passkey_id', '');
         $this->clearPendingState($request);
 
         return redirect()->intended(route('dashboard'));
@@ -41,6 +47,8 @@ final class AuthenticateController
             'auth.pending_started_at',
             'auth.pending_mfa_verified',
             'auth.pending_email_mfa',
+            'auth.pending_primary_method',
+            'auth.pending_mfa_method',
         ]);
     }
 }

@@ -122,10 +122,26 @@ export class CryptoEncryptor {
     }
 
     /**
+     * Encrypt a password/value with the unlocked DEK.
+     * This is intended for vault item password fields.
+     */
+    static async encryptPasswordWithDek(
+        password: string,
+        dek: BinarySource,
+        iv?: BinarySource,
+    ): Promise<EncryptedPayload> {
+        if (typeof password !== 'string' || password.length === 0) {
+            throw new Error('password must be a non-empty string.');
+        }
+
+        return this.encryptWithKey(password, dek, iv);
+    }
+
+    /**
      * Wrap the master key with a key derived from the user's password.
      * Use at signup and password rotation only.
      */
-    static async wrapMasterKeyWithPassword(
+    static async wrapKeyWithPassword(
         masterKey: BinarySource,
         password: string,
         params: EncryptParams = {},

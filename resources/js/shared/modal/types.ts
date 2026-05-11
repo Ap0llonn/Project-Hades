@@ -1,12 +1,14 @@
 import type { ComputedRef } from 'vue';
 
 export type ModalType = 'confirmation' | 'danger' | 'form';
+export type ModalSize = 'sm' | 'md' | 'lg';
 
-export type ModalFieldType = 'text' | 'email' | 'password' | 'number' | 'textarea';
+export type ModalFieldType = 'text' | 'email' | 'password' | 'number' | 'textarea' | 'checkbox';
 
 export interface ModalField {
     name: string;
     label: string;
+    section?: string;
     type?: ModalFieldType;
     placeholder?: string;
     required?: boolean;
@@ -31,6 +33,7 @@ export interface BaseModalOptions {
     title?: string;
     message?: string;
     qrSvg?: string;
+    size?: ModalSize;
     confirmLabel?: string;
     cancelLabel?: string | null;
     disableBackdropClose?: boolean;
@@ -55,6 +58,7 @@ export interface ModalFormState {
 export interface ModalRecord {
     id: string;
     type: ModalType;
+    size: ModalSize;
     title: string;
     message: string;
     qrSvg?: string;

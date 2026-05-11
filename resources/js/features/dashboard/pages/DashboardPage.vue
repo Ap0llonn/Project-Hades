@@ -1,21 +1,35 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import DashboardLayout from '../layouts/DashboardLayout.vue';
+import { useModal } from '../../../shared/modal';
+import { openCardItemModal } from '../components/item-modals/cardItemModalForm';
+import { openIdentityItemModal } from '../components/item-modals/identityItemModalForm';
+import { openLoginItemModal } from '../components/item-modals/loginItemModalForm';
+import { openNoteItemModal } from '../components/item-modals/noteItemModalForm';
 import {
     AlertCircle,
+    Archive,
+    ChevronDown,
     Clock,
     Copy,
     CreditCard,
     Eye,
     EyeOff,
     FileText,
+    Folder,
+    FolderPlus,
+    Globe,
+    HelpCircle,
+    IdCard,
     Key,
     MoreVertical,
     Plus,
     Search,
     Shield,
     Star,
+    Trash2,
+    User,
     Users,
     Zap,
 } from 'lucide-vue-next';
@@ -23,11 +37,17 @@ import {
 const searchQuery = ref('');
 const selectedCategory = ref('all');
 const visiblePasswords = ref(new Set());
-const showAddModal = ref(false);
+const showAddDropdown = ref(false);
+const addMenuRef = ref(null);
 const generatorLength = ref(20);
 const generatedPassword = ref('');
+const allItemsVaultFilter = ref('all-vaults');
+const allItemsTypeFilter = ref('all-items');
+const allItemsFolderFilter = ref('no-folder');
+const allItemsLifecycleFilter = ref('active');
+const modal = useModal();
 
-const vaultCategories = ['all', 'favorites', 'login', 'card', 'note'];
+const vaultCategories = ['all', 'favorites', 'login', 'card', 'note', 'identity'];
 
 const generatePassword = (length) => {
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{};:,.?/|';
@@ -45,7 +65,7 @@ const regenerateGeneratedPassword = () => {
     generatedPassword.value = generatePassword(generatorLength.value);
 };
 
-const passwords = [
+const passwords = ref([
     {
         id: '1',
         name: 'Facebook',
@@ -56,6 +76,7 @@ const passwords = [
         favorite: true,
         lastUsed: '2 hours ago',
         strength: 'strong',
+        status: 'active',
     },
     {
         id: '2',
@@ -67,6 +88,7 @@ const passwords = [
         favorite: true,
         lastUsed: '5 hours ago',
         strength: 'strong',
+        status: 'active',
     },
     {
         id: '3',
@@ -78,6 +100,7 @@ const passwords = [
         favorite: false,
         lastUsed: '1 day ago',
         strength: 'medium',
+        status: 'active',
     },
     {
         id: '4',
@@ -89,6 +112,7 @@ const passwords = [
         favorite: false,
         lastUsed: '2 days ago',
         strength: 'strong',
+        status: 'active',
     },
     {
         id: '5',
@@ -100,6 +124,7 @@ const passwords = [
         favorite: false,
         lastUsed: '3 days ago',
         strength: 'weak',
+        status: 'active',
     },
     {
         id: '6',
@@ -111,11 +136,12 @@ const passwords = [
         favorite: false,
         lastUsed: '1 week ago',
         strength: 'strong',
+        status: 'active',
     },
-];
+]);
 
 const filteredPasswords = computed(() =>
-    passwords.filter((pwd) => {
+    passwords.value.filter((pwd) => {
         const query = searchQuery.value.toLowerCase();
         const matchesSearch =
             pwd.name.toLowerCase().includes(query) ||
@@ -125,16 +151,24 @@ const filteredPasswords = computed(() =>
             selectedCategory.value === 'all' ||
             (selectedCategory.value === 'favorites' && pwd.favorite) ||
             selectedCategory.value === pwd.category;
+        const matchesAllItemsType =
+            allItemsTypeFilter.value === 'all-items' ||
+            (allItemsTypeFilter.value === 'favorites' && pwd.favorite) ||
+            allItemsTypeFilter.value === pwd.category;
+        const matchesAllItemsLifecycle =
+            allItemsLifecycleFilter.value === 'all' || (pwd.status ?? 'active') === allItemsLifecycleFilter.value;
+        const matchesAllItemsFilters =
+            selectedCategory.value !== 'all' || (matchesAllItemsType && matchesAllItemsLifecycle);
 
-        return matchesSearch && matchesCategory;
+        return matchesSearch && matchesCategory && matchesAllItemsFilters;
     }),
 );
 
-const favoriteCount = computed(() => passwords.filter((p) => p.favorite).length);
-const loginCount = computed(() => passwords.filter((p) => p.category === 'login').length);
-const cardCount = computed(() => passwords.filter((p) => p.category === 'card').length);
-const noteCount = computed(() => passwords.filter((p) => p.category === 'note').length);
-const weakPasswords = computed(() => passwords.filter((p) => p.strength === 'weak').length);
+const favoriteCount = computed(() => passwords.value.filter((p) => p.favorite).length);
+const loginCount = computed(() => passwords.value.filter((p) => p.category === 'login').length);
+const cardCount = computed(() => passwords.value.filter((p) => p.category === 'card').length);
+const noteCount = computed(() => passwords.value.filter((p) => p.category === 'note').length);
+const weakPasswords = computed(() => passwords.value.filter((p) => p.strength === 'weak').length);
 const securityScore = 78;
 const reusedPasswords = 2;
 const breachedPasswords = 0;
@@ -157,6 +191,9 @@ const categoryTitle = computed(() => {
     }
     if (selectedCategory.value === 'card') {
         return 'Cards';
+    }
+    if (selectedCategory.value === 'identity') {
+        return 'Identity';
     }
     if (selectedCategory.value === 'security-center') {
         return 'Security Center';
@@ -192,6 +229,101 @@ const copyToClipboard = async (text) => {
     }
 };
 
+const closeAddModal = () => {
+    modal.dismiss();
+};
+
+const toggleAddDropdown = () => {
+    showAddDropdown.value = !showAddDropdown.value;
+};
+
+const openAddItemModal = (type) => {
+    showAddDropdown.value = false;
+    if (type === 'login') {
+        openLoginItemModal(modal, saveNewItem);
+        return;
+    }
+    if (type === 'card') {
+        openCardItemModal(modal, saveNewItem);
+        return;
+    }
+    if (type === 'identity') {
+        openIdentityItemModal(modal, saveNewItem);
+        return;
+    }
+
+    openNoteItemModal(modal, saveNewItem);
+};
+
+const closeAddDropdown = () => {
+    showAddDropdown.value = false;
+};
+
+const handleClickOutsideAddMenu = (event) => {
+    const target = event.target;
+    if (!(target instanceof Node)) {
+        return;
+    }
+
+    if (addMenuRef.value && !addMenuRef.value.contains(target)) {
+        closeAddDropdown();
+    }
+};
+
+const passwordStrength = (password) => {
+    if (password.length < 8) {
+        return 'weak';
+    }
+
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+    return hasLower && hasUpper && hasDigit && hasSymbol ? 'strong' : 'medium';
+};
+
+const saveNewItem = (item) => {
+    const itemName = (item.name ?? '').trim();
+    const itemType = item.type ?? 'note';
+    const cardLastFour = (item.cardNumber ?? '').replace(/\s+/g, '').slice(-4);
+    const identityLabel = (item.email ?? '').trim() || (item.fullName ?? '').trim() || 'Identity';
+
+    const newItem = {
+        id: `${Date.now()}`,
+        name: itemName,
+        username:
+            itemType === 'login'
+                ? (item.username ?? '').trim()
+                : itemType === 'card'
+                  ? `**** **** **** ${cardLastFour || '0000'}`
+                  : itemType === 'identity'
+                    ? identityLabel
+                    : 'Secure note',
+        password: itemType === 'login' ? (item.password ?? '') : '***',
+        url: itemType === 'login' ? (item.url ?? '').trim() : '',
+        category: itemType,
+        favorite: Boolean(item.favorite),
+        note: (item.note ?? '').trim(),
+        requiresMasterPasswordForNote: Boolean(item.requireMasterPassword),
+        lastUsed: 'just now',
+        strength: itemType === 'login' ? passwordStrength(item.password ?? '') : 'strong',
+        status: 'active',
+    };
+
+    passwords.value.unshift(newItem);
+    selectedCategory.value = itemType;
+    closeAddModal();
+};
+
+onMounted(() => {
+    document.addEventListener('mousedown', handleClickOutsideAddMenu);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('mousedown', handleClickOutsideAddMenu);
+});
+
 regenerateGeneratedPassword();
 </script>
 
@@ -215,13 +347,63 @@ regenerateGeneratedPassword();
                             <h1 class="text-3xl font-semibold tracking-tight text-on-surface">My Vault</h1>
                             <p class="text-on-surface-variant">Manage your passwords and secure information</p>
                         </div>
-                        <button
-                            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
-                            @click="showAddModal = true"
-                        >
-                            <Plus class="h-5 w-5" />
-                            Add Item
-                        </button>
+                        <div ref="addMenuRef" class="relative">
+                            <button
+                                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
+                                @click="toggleAddDropdown"
+                            >
+                                <Plus class="h-5 w-5" />
+                                Add Item
+                                <ChevronDown class="h-4 w-4" />
+                            </button>
+
+                            <Transition
+                                enter-active-class="transition duration-150 ease-out"
+                                enter-from-class="translate-y-1 opacity-0"
+                                enter-to-class="translate-y-0 opacity-100"
+                                leave-active-class="transition duration-100 ease-in"
+                                leave-from-class="translate-y-0 opacity-100"
+                                leave-to-class="translate-y-1 opacity-0"
+                            >
+                                <div
+                                    v-if="showAddDropdown"
+                                    class="absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-lg"
+                                >
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-low"
+                                        @click="openAddItemModal('login')"
+                                    >
+                                        <Key class="h-4 w-4 text-primary" />
+                                        <span class="font-medium text-on-surface">Login</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-low"
+                                        @click="openAddItemModal('card')"
+                                    >
+                                        <CreditCard class="h-4 w-4 text-primary" />
+                                        <span class="font-medium text-on-surface">Credit Card</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-low"
+                                        @click="openAddItemModal('note')"
+                                    >
+                                        <FileText class="h-4 w-4 text-primary" />
+                                        <span class="font-medium text-on-surface">Note</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-low"
+                                        @click="openAddItemModal('identity')"
+                                    >
+                                        <IdCard class="h-4 w-4 text-primary" />
+                                        <span class="font-medium text-on-surface">Identity</span>
+                                    </button>
+                                </div>
+                            </Transition>
+                        </div>
                     </div>
 
                     <div class="relative">
@@ -238,6 +420,107 @@ regenerateGeneratedPassword();
             </header>
 
             <div class="p-6 md:p-8">
+                <div :class="selectedCategory === 'all' ? 'grid grid-cols-1 gap-8 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start' : ''">
+                    <aside
+                        v-if="selectedCategory === 'all'"
+                        class="self-start lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto"
+                    >
+                        <div class="overflow-hidden rounded-xl border border-outline-variant bg-surface">
+                            <div class="flex items-center justify-between border-b border-outline-variant px-5 py-4">
+                                <h2 class="text-sm font-semibold uppercase tracking-wide text-on-surface">Filters</h2>
+                                <button type="button" class="rounded p-1 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" title="Filter help">
+                                    <HelpCircle class="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div class="space-y-5 p-5">
+                                <div class="relative">
+                                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+                                    <input
+                                        v-model="searchQuery"
+                                        type="text"
+                                        placeholder="Search in vault"
+                                        class="w-full rounded-lg border border-outline-variant bg-surface py-2.5 pl-10 pr-3 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    >
+                                </div>
+
+                                <div>
+                                    <p class="mb-2 text-lg font-semibold text-primary">All Vaults</p>
+                                    <div class="space-y-1 text-on-surface">
+                                        <button
+                                            type="button"
+                                            class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low"
+                                            @click="allItemsVaultFilter = 'my-vault'"
+                                        >
+                                            <User class="h-4 w-4" />
+                                            <span>My Vault</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low"
+                                        >
+                                            <FolderPlus class="h-4 w-4" />
+                                            <span>New Organization</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-outline-variant pt-4">
+                                    <p class="mb-2 text-lg font-semibold text-primary">All Items</p>
+                                    <div class="space-y-1 text-on-surface">
+                                        <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsTypeFilter = 'favorites'">
+                                            <Star class="h-4 w-4" />
+                                            <span>Favorites</span>
+                                        </button>
+                                        <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsTypeFilter = 'login'">
+                                            <Globe class="h-4 w-4" />
+                                            <span>Login</span>
+                                        </button>
+                                        <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsTypeFilter = 'card'">
+                                            <CreditCard class="h-4 w-4" />
+                                            <span>Payment Card</span>
+                                        </button>
+                                        <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsTypeFilter = 'identity'">
+                                            <IdCard class="h-4 w-4" />
+                                            <span>Identity</span>
+                                        </button>
+                                        <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsTypeFilter = 'note'">
+                                            <FileText class="h-4 w-4" />
+                                            <span>Note</span>
+                                        </button>
+                                        <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsTypeFilter = 'ssh'">
+                                            <Key class="h-4 w-4" />
+                                            <span>SSH Key</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-outline-variant pt-4">
+                                    <p class="mb-2 text-lg font-semibold text-on-surface-variant">Folders</p>
+                                    <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsFolderFilter = 'no-folder'">
+                                        <Folder class="h-4 w-4" />
+                                        <span>No Folder</span>
+                                    </button>
+                                </div>
+
+                                <div class="border-t border-outline-variant pt-4">
+                                    <button type="button" class="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsLifecycleFilter = 'archived'">
+                                        <Archive class="h-4 w-4" />
+                                        <span>Archive</span>
+                                    </button>
+                                    <button type="button" class="mt-1 flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-base transition-colors hover:bg-surface-container-low" @click="allItemsLifecycleFilter = 'trash'">
+                                        <Trash2 class="h-4 w-4" />
+                                        <span>Trash</span>
+                                    </button>
+                                    <button type="button" class="mt-3 rounded-md border border-outline-variant px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface" @click="allItemsTypeFilter = 'all-items'; allItemsLifecycleFilter = 'active'; allItemsFolderFilter = 'no-folder'; allItemsVaultFilter = 'all-vaults'">
+                                        Reset filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <div :class="selectedCategory === 'all' ? 'min-w-0' : ''">
                 <section v-if="isVaultCategory || isSecurityCenter" class="mb-8">
                     <div class="rounded-2xl border border-outline-variant bg-gradient-to-br from-surface-container to-surface-container-high p-8">
                         <div class="mb-6 flex items-start justify-between">
@@ -467,6 +750,7 @@ regenerateGeneratedPassword();
                                     <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-secondary-container to-tertiary-fixed">
                                         <Key v-if="pwd.category === 'login'" class="h-6 w-6 text-blue-600" />
                                         <CreditCard v-else-if="pwd.category === 'card'" class="h-6 w-6 text-blue-600" />
+                                        <IdCard v-else-if="pwd.category === 'identity'" class="h-6 w-6 text-blue-600" />
                                         <FileText v-else class="h-6 w-6 text-blue-600" />
                                     </div>
 
@@ -550,60 +834,9 @@ regenerateGeneratedPassword();
                         </div>
                     </div>
                 </section>
-            </div>
-
-        <Transition
-            enter-active-class="transition duration-150 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition duration-100 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div
-                v-if="showAddModal"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                @click.self="showAddModal = false"
-            >
-                <div class="w-full max-w-md rounded-2xl border border-outline-variant bg-surface p-8">
-                    <h2 class="mb-6 text-2xl font-semibold tracking-tight text-on-surface">Add New Item</h2>
-                    <div class="space-y-4">
-                        <button class="flex w-full items-center gap-4 rounded-xl border border-outline-variant p-4 text-left transition-all hover:border-primary">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary-container">
-                                <Key class="h-6 w-6 text-blue-600" />
-                            </div>
-                            <div>
-                                <p class="font-semibold text-on-surface">Login</p>
-                                <p class="text-sm text-on-surface-variant">Username and password</p>
-                            </div>
-                        </button>
-                        <button class="flex w-full items-center gap-4 rounded-xl border border-outline-variant p-4 text-left transition-all hover:border-primary">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-tertiary-fixed">
-                                <CreditCard class="h-6 w-6 text-indigo-600" />
-                            </div>
-                            <div>
-                                <p class="font-semibold text-on-surface">Credit Card</p>
-                                <p class="text-sm text-on-surface-variant">Card details</p>
-                            </div>
-                        </button>
-                        <button class="flex w-full items-center gap-4 rounded-xl border border-outline-variant p-4 text-left transition-all hover:border-primary">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-tertiary-fixed">
-                                <FileText class="h-6 w-6 text-green-600" />
-                            </div>
-                            <div>
-                                <p class="font-semibold text-on-surface">Secure Note</p>
-                                <p class="text-sm text-on-surface-variant">Text information</p>
-                            </div>
-                        </button>
                     </div>
-                    <button
-                        class="mt-6 w-full rounded-lg border border-outline-variant px-6 py-3 font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low"
-                        @click="showAddModal = false"
-                    >
-                        Cancel
-                    </button>
                 </div>
             </div>
-        </Transition>
+
     </DashboardLayout>
 </template>

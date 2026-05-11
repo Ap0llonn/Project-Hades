@@ -12,10 +12,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\LaravelPasskeys\Models\Concerns\HasPasskeys;
+use Spatie\LaravelPasskeys\Models\Concerns\InteractsWithPasskeys;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasPasskeys
 {
     use HasUuids;
+    use InteractsWithPasskeys;
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -43,6 +46,16 @@ class User extends Authenticatable
         return $this->hasOne(MfaMethods::class, 'user_id', 'id');
     }
 
+    public function vault(): HasOne
+    {
+        return $this->hasOne(Vault::class, 'user_id', 'id');
+    }
+
+    public function oauthAccounts(): HasMany
+    {
+        return $this->hasMany(OAuthAccount::class, 'user_id', 'id');
+    }
+
     protected static function booted() : void
     {
         static::created(function ($user) {
@@ -56,5 +69,22 @@ class User extends Authenticatable
                 'mfa_activated' => false,
             ]);
         });
+    }
+
+    public function getPassKeyName(): string
+    {
+        return $this->email;
+    }
+
+    public function getPassKeyId(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function getPassKeyDisplayName(): string
+    {
+        $fullName = trim(sprintf('%s %s', $this->first_name ?? '', $this->last_name ?? ''));
+
+        return $fullName !== '' ? $fullName : $this->email;
     }
 }

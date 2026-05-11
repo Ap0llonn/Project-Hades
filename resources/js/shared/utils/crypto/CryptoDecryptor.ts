@@ -1,4 +1,5 @@
 import {
+    BinarySource,
     EncryptedPayload,
     bytesToUtf8,
     deriveSecretboxKey,
@@ -7,7 +8,35 @@ import {
 } from './cryptoCore';
 
 export class CryptoDecryptor {
-    static async decryptWithPassword(payload: EncryptedPayload, password: string): Promise<string> {
+    static async decryptBytesWithKey(
+        payload: { ciphertextBase64: string; ivBase64: string },
+        key: BinarySource,
+    ): Promise<Uint8Array> {
+        if (!payload?.ciphertextBase64 || !payload?.ivBase64) {
+            throw new Error('Payload must include ciphertextBase64 and ivBase64.');
+        }
+
+        const sodiumApi = await getSodium();
+        const nonceBytes = normalizeBytes(payload.ivBase64, 'iv');
+        const cipherBytes = normalizeBytes(payload.ciphertextBase64, 'ciphertext');
+        const keyBytes = normalizeBytes(key, 'key');
+
+        if (nonceBytes.length !== sodiumApi.crypto_secretbox_NONCEBYTES) {
+            throw new Error(`iv must be ${sodiumApi.crypto_secretbox_NONCEBYTES} bytes for libsodium crypto_secretbox.`);
+        }
+
+        if (keyBytes.length !== sodiumApi.crypto_secretbox_KEYBYTES) {
+            throw new Error(`key must be ${sodiumApi.crypto_secretbox_KEYBYTES} bytes for libsodium crypto_secretbox.`);
+        }
+
+        return sodiumApi.crypto_secretbox_open_easy(
+            cipherBytes,
+            nonceBytes,
+            keyBytes,
+        );
+    }
+
+    static async decryptBytesWithPassword(payload: EncryptedPayload, password: string): Promise<Uint8Array> {
         if (!payload?.ciphertextBase64 || !payload?.ivBase64 || !payload?.saltBase64) {
             throw new Error('Payload must include ciphertextBase64, ivBase64, and saltBase64.');
         }
@@ -26,12 +55,28 @@ export class CryptoDecryptor {
             argonMemoryKb: payload.argonMemoryKb,
             argonType: payload.argonType,
         });
-        const plaintextBytes = sodiumApi.crypto_secretbox_open_easy(
+
+        return sodiumApi.crypto_secretbox_open_easy(
             cipherBytes,
             nonceBytes,
             keyBytes,
         );
+    }
 
+    static async decryptWithPassword(payload: EncryptedPayload, password: string): Promise<string> {
+        const plaintextBytes = await this.decryptBytesWithPassword(payload, password);
+        return bytesToUtf8(plaintextBytes);
+    }
+
+    /**
+     * Decrypt a password/value using the unlocked DEK.
+     * This is intended for vault item password fields.
+     */
+    static async decryptPasswordWithDek(
+        payload: { ciphertextBase64: string; ivBase64: string },
+        dek: BinarySource,
+    ): Promise<string> {
+        const plaintextBytes = await this.decryptBytesWithKey(payload, dek);
         return bytesToUtf8(plaintextBytes);
     }
 

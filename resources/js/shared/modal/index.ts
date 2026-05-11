@@ -11,6 +11,7 @@ export type {
     ModalFieldType,
     ModalFormState,
     ModalRecord,
+    ModalSize,
     ModalStoreApi,
     ModalSubmitHandler,
     ModalType,

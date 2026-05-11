@@ -55,6 +55,7 @@ const pushModal = (
     const modal: ModalRecord = {
         id,
         type,
+        size: options.size ?? 'md',
         title: options.title ?? getDefaultTitle(type),
         message: options.message ?? '',
         qrSvg: options.qrSvg,

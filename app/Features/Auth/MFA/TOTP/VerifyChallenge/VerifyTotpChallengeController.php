@@ -23,6 +23,7 @@ final class VerifyTotpChallengeController
         ));
 
         $request->session()->put('auth.pending_mfa_verified', true);
+        $request->session()->put('auth.pending_mfa_method', $payload['method']);
 
         return redirect()->route('login.authenticate');
     }

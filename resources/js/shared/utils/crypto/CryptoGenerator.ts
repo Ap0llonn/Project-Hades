@@ -11,7 +11,6 @@ import {
 } from './cryptoCore';
 
 export const DEFAULT_MASTER_KEY_BYTES = 32;
-export const DEFAULT_PRIVATE_KEY_BYTES = 32;
 export const DEFAULT_RECOVERY_CODES_COUNT = 12;
 export const DEFAULT_RECOVERY_CODE_SEGMENTS = 3;
 export const DEFAULT_RECOVERY_CODE_SEGMENT_LENGTH = 4;
@@ -28,17 +27,36 @@ export interface DerivedClientKey {
 
 export interface GeneratedClientKeyPair {
     masterKeyBase64: string;
+    publicKeyBase64: string;
     privateKeyBase64: string;
     saltBase64: string;
 }
 
 export class CryptoGenerator {
     static async generateMasterKey(byteLength = DEFAULT_MASTER_KEY_BYTES): Promise<string> {
+        if (byteLength === DEFAULT_MASTER_KEY_BYTES) {
+            return this.generateSymmetricKey();
+        }
+
         return toBase64(await randomCryptoBytes(byteLength));
     }
 
-    static async generatePrivateKey(byteLength = DEFAULT_PRIVATE_KEY_BYTES): Promise<string> {
-        return toBase64(await randomCryptoBytes(byteLength));
+    static async generateSymmetricKey(): Promise<string> {
+        const sodium = await getSodium();
+        return toBase64(sodium.crypto_secretbox_keygen());
+    }
+
+    static async generateAsymmetricKeyPair(): Promise<{
+        publicKeyBase64: string;
+        privateKeyBase64: string;
+    }> {
+        const sodium = await getSodium();
+        const keyPair = sodium.crypto_box_keypair();
+
+        return {
+            publicKeyBase64: toBase64(keyPair.publicKey),
+            privateKeyBase64: toBase64(keyPair.privateKey),
+        };
     }
 
     static async generateSalt(byteLength = DEFAULT_SALT_LENGTH): Promise<string> {
@@ -72,12 +90,14 @@ export class CryptoGenerator {
 
     static async generateClientKeyPair(
         masterKeyBytes = DEFAULT_MASTER_KEY_BYTES,
-        privateKeyBytes = DEFAULT_PRIVATE_KEY_BYTES,
         saltBytes = DEFAULT_SALT_LENGTH,
     ): Promise<GeneratedClientKeyPair> {
+        const asymmetricKeyPair = await this.generateAsymmetricKeyPair();
+
         return {
             masterKeyBase64: await this.generateMasterKey(masterKeyBytes),
-            privateKeyBase64: await this.generatePrivateKey(privateKeyBytes),
+            publicKeyBase64: asymmetricKeyPair.publicKeyBase64,
+            privateKeyBase64: asymmetricKeyPair.privateKeyBase64,
             saltBase64: await this.generateSalt(saltBytes),
         };
     }
