@@ -52,7 +52,7 @@ export const openLoginItemModal: ItemModalOpener = (modal, onSave) => {
             },
         ],
         onSubmit: (values) => {
-            onSave({
+            return onSave({
                 type: 'login',
                 name: values.name,
                 username: values.username,
@@ -64,3 +64,4 @@ export const openLoginItemModal: ItemModalOpener = (modal, onSave) => {
         },
     });
 };
+

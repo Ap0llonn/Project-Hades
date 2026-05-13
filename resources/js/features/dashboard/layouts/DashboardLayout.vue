@@ -86,54 +86,6 @@ const selectCategory = (category) => {
                     <span class="ml-auto text-sm">{{ totalCount }}</span>
                 </button>
 
-                <button
-                    type="button"
-                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
-                    :class="selectedCategory === 'favorites' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
-                    @click="selectCategory('favorites')"
-                >
-                    <Star class="h-5 w-5" />
-                    <span class="font-medium">Favorites</span>
-                    <span class="ml-auto text-sm">{{ favoriteCount }}</span>
-                </button>
-
-                <div class="px-4 pb-2 pt-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Categories</p>
-                </div>
-
-                <button
-                    type="button"
-                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
-                    :class="selectedCategory === 'login' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
-                    @click="selectCategory('login')"
-                >
-                    <Key class="h-5 w-5" />
-                    <span class="font-medium">Logins</span>
-                    <span class="ml-auto text-sm">{{ loginCount }}</span>
-                </button>
-
-                <button
-                    type="button"
-                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
-                    :class="selectedCategory === 'card' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
-                    @click="selectCategory('card')"
-                >
-                    <CreditCard class="h-5 w-5" />
-                    <span class="font-medium">Cards</span>
-                    <span class="ml-auto text-sm">{{ cardCount }}</span>
-                </button>
-
-                <button
-                    type="button"
-                    class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
-                    :class="selectedCategory === 'note' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"
-                    @click="selectCategory('note')"
-                >
-                    <FileText class="h-5 w-5" />
-                    <span class="font-medium">Secure Notes</span>
-                    <span class="ml-auto text-sm">{{ noteCount }}</span>
-                </button>
-
                 <div class="px-4 pb-2 pt-4">
                     <p class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Features</p>
                 </div>

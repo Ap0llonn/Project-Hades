@@ -2,16 +2,7 @@
 
 ## 1) Prepare environment
 
-```bash
-cp .env.example .env
-```
-
-Then update at minimum:
-
-- `APP_KEY` (real generated key)
-- `APP_URL`
-- `DB_PASSWORD`
-- `POSTGRES_PASSWORD`
+Use the root project `.env` (`/Project-Hades/.env`).
 
 You can generate a key with:
 
@@ -19,7 +10,7 @@ You can generate a key with:
 docker compose -f docker/prod/compose.yml run --rm app php artisan key:generate --show
 ```
 
-Then paste that value into `docker/prod/.env` as `APP_KEY=...`.
+Then paste that value in root `.env` as `APP_KEY=...`.
 
 ## 2) Build and run
 

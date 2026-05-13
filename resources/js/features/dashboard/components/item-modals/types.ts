@@ -19,7 +19,7 @@ export interface ItemModalPayload {
     favorite?: boolean;
 }
 
-export type ItemModalSaveHandler = (payload: ItemModalPayload) => void;
+export type ItemModalSaveHandler = (payload: ItemModalPayload) => Promise<void> | void;
 
 export type ItemModalOpener = (
     modal: ModalApi,

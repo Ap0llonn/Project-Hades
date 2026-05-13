@@ -57,7 +57,7 @@ export const openCardItemModal: ItemModalOpener = (modal, onSave) => {
             },
         ],
         onSubmit: (values) => {
-            onSave({
+            return onSave({
                 type: 'card',
                 name: values.name,
                 cardholder: values.cardholder,
@@ -70,3 +70,4 @@ export const openCardItemModal: ItemModalOpener = (modal, onSave) => {
         },
     });
 };
+

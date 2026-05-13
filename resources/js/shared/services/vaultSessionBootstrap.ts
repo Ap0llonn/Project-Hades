@@ -7,6 +7,11 @@ export const LOGIN_MASTER_PASSWORD_STORAGE_KEY = 'vaultguardian.login.master_pas
 
 interface InertiaPageLike {
     component?: string;
+    props?: {
+        auth?: {
+            user_id?: string | null;
+        };
+    };
 }
 
 let bootstrapInFlight: Promise<void> | null = null;
@@ -103,8 +108,19 @@ const isAuthenticatedAppPage = (page?: InertiaPageLike): boolean => {
     return component.startsWith('dashboard/');
 };
 
+const resolveVaultScope = (page?: InertiaPageLike): string => {
+    const userId = page?.props?.auth?.user_id;
+    return typeof userId === 'string' && userId.trim() !== '' ? userId.trim() : 'anonymous';
+};
+
 export const ensureAuthenticatedVaultSession = async (page?: InertiaPageLike): Promise<void> => {
-    if (!isAuthenticatedAppPage(page) || vaultSession.isUnlocked()) {
+    if (!isAuthenticatedAppPage(page)) {
+        return;
+    }
+
+    vaultSession.setScope(resolveVaultScope(page));
+    await vaultSession.hydrateFromWorker();
+    if (vaultSession.isUnlocked()) {
         return;
     }
 

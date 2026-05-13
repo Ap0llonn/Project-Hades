@@ -62,7 +62,7 @@ export const openIdentityItemModal: ItemModalOpener = (modal, onSave) => {
                 throw new Error('Provide at least a full name or an email.');
             }
 
-            onSave({
+            return onSave({
                 type: 'identity',
                 name: values.name,
                 fullName: values.fullName,
@@ -75,3 +75,4 @@ export const openIdentityItemModal: ItemModalOpener = (modal, onSave) => {
         },
     });
 };
+
