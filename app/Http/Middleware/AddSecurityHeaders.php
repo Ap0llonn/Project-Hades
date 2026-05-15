@@ -33,7 +33,7 @@ final class AddSecurityHeaders
                 "base-uri 'self'",
                 "frame-ancestors 'none'",
                 "object-src 'none'",
-                "script-src 'self' 'nonce-{$nonce}'",
+                "script-src 'self' 'nonce-{$nonce}' 'wasm-unsafe-eval'",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: https:",
                 "font-src 'self' data:",
