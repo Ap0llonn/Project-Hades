@@ -17,6 +17,8 @@
         "socialiteproviders/apple": "^5.10",
         "spatie/laravel-passkeys": "^1.7",
         "spomky-labs/otphp": "^11.4",
+        "symfony/http-client": "7.3",
+        "symfony/resend-mailer": "7.3",
         "tightenco/ziggy": "^2.6"
     },
     "require-dev": {
