@@ -13,6 +13,7 @@ import { openCardItemModal } from '../components/item-modals/cardItemModalForm';
 import { openIdentityItemModal } from '../components/item-modals/identityItemModalForm';
 import { openLoginItemModal } from '../components/item-modals/loginItemModalForm';
 import { openNoteItemModal } from '../components/item-modals/noteItemModalForm';
+import { openServiceItemActionsModal } from '../components/item-modals/serviceItemActionsModalForm';
 import { useModal } from '../../../shared/modal';
 
 const searchQuery = ref('');
@@ -60,6 +61,10 @@ const copyToClipboard = async (text) => {
     } catch {
         // Silent failure for unsupported clipboard contexts.
     }
+};
+
+const regenerateGeneratedPassword = () => {
+    // Generator is handled locally inside DashboardFeaturePanelsSection.
 };
 
 const filteredPasswords = computed(() =>

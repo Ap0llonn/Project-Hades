@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { Check } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     isSecurityCenter: { type: Boolean, required: true },
     isPasswordGenerator: { type: Boolean, required: true },
     isImportExport: { type: Boolean, required: true },
@@ -11,6 +11,15 @@ defineProps({
     weakPasswords: { type: Number, required: true },
     reusedPasswords: { type: Number, required: true },
     breachedPasswords: { type: Number, required: true },
+    generatorLength: { type: Number, required: true },
+    generatedPassword: { type: String, default: '' },
+    shareableItems: { type: Array, default: () => [] },
+    selectedShareServiceId: { type: String, default: '' },
+    shareRecipientEmail: { type: String, default: '' },
+    shareBusy: { type: Boolean, default: false },
+    shareStatus: { type: String, default: '' },
+    incomingShares: { type: Array, default: () => [] },
+    incomingSharesBusy: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -24,19 +33,59 @@ const emit = defineEmits([
     'revoke-incoming-share',
 ]);
 
+const length = ref(20);
+const useUpper = ref(true);
+const useLower = ref(true);
+const useNumbers = ref(true);
+const useSpecial = ref(true);
+const localGeneratedPassword = ref('');
+
+const buildCharset = () => {
+    let charset = '';
+    if (useUpper.value) {
+        charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    }
+    if (useLower.value) {
+        charset += 'abcdefghijklmnopqrstuvwxyz';
+    }
+    if (useNumbers.value) {
+        charset += '0123456789';
+    }
+    if (useSpecial.value) {
+        charset += '!@#$%^&*()-_=+[]{};:,.<>?';
+    }
+
+    return charset || 'abcdefghijklmnopqrstuvwxyz';
+};
+
 const generate = () => {
     const charset = buildCharset();
     const array = new Uint32Array(length.value);
     crypto.getRandomValues(array);
-    generatedPassword.value = Array.from(array)
+    localGeneratedPassword.value = Array.from(array)
         .map((n) => charset[n % charset.length])
         .join('');
 };
 
 const copyPassword = async () => {
     try {
-        await navigator.clipboard.writeText(generatedPassword.value);
+        await navigator.clipboard.writeText(localGeneratedPassword.value);
     } catch { /* silent */ }
+};
+
+const onGeneratorLengthInput = (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+        return;
+    }
+
+    const parsed = Number.parseInt(target.value, 10);
+    if (Number.isNaN(parsed)) {
+        return;
+    }
+
+    length.value = parsed;
+    emit('update:generatorLength', parsed);
 };
 
 const onServiceSelect = (event) => {
@@ -56,6 +105,27 @@ const onRecipientInput = (event) => {
 
     emit('update:shareRecipientEmail', target.value);
 };
+
+watch(
+    () => props.generatorLength,
+    (value) => {
+        const parsed = Number.parseInt(String(value), 10);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+            length.value = parsed;
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => props.generatedPassword,
+    (value) => {
+        if (typeof value === 'string' && value.trim() !== '') {
+            localGeneratedPassword.value = value;
+        }
+    },
+    { immediate: true },
+);
 
 watch([length, useUpper, useLower, useNumbers, useSpecial], generate);
 
@@ -96,19 +166,19 @@ generate();
             <div class="rounded-xl border border-outline-variant bg-surface-container-low p-5">
                 <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <label for="generatorLength" class="text-sm font-medium text-on-surface-variant">
-                        Length: <span class="font-semibold text-on-surface">{{ generatorLength }}</span>
+                        Length: <span class="font-semibold text-on-surface">{{ length }}</span>
                     </label>
                     <button
                         type="button"
                         class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
-                        @click="emit('regenerate-password')"
+                        @click="generate"
                     >
                         Generate New
                     </button>
                 </div>
                 <input
                     id="generatorLength"
-                    :value="generatorLength"
+                    :value="length"
                     type="range"
                     min="12"
                     max="40"
@@ -141,7 +211,7 @@ generate();
                 <!-- Result -->
                 <div class="mt-4 rounded-lg border border-outline-variant bg-surface px-4 py-3">
                     <p class="text-xs uppercase tracking-wider text-on-surface-variant">Generated Password</p>
-                    <p class="mt-2 break-all font-mono text-sm text-on-surface">{{ generatedPassword }}</p>
+                    <p class="mt-2 break-all font-mono text-sm text-on-surface">{{ localGeneratedPassword }}</p>
                 </div>
             </div>
 
@@ -292,4 +362,3 @@ generate();
         </div>
     </section>
 </template>
-
