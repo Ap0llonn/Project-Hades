@@ -1,46 +1,42 @@
+version: "3.9"
+
 services:
   app:
     build:
       context: ../..
       dockerfile: docker/prod/Dockerfile
       target: app
-    env_file:
-      - ../../.env
+
+    restart: unless-stopped
+
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
       LOG_CHANNEL: stderr
-    restart: unless-stopped
+
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - web
 
   nginx:
     build:
       context: ../..
       dockerfile: docker/prod/Dockerfile
       target: nginx
-    ports:
-      - "${APP_PORT:-8080}:80"
+
     restart: unless-stopped
+
     depends_on:
       - app
-    networks:
-      - web
 
   worker:
     build:
       context: ../..
       dockerfile: docker/prod/Dockerfile
       target: app
-    env_file:
-      - ../../.env
-    environment:
-      APP_ENV: production
-      APP_DEBUG: "false"
-      LOG_CHANNEL: stderr
+
+    restart: unless-stopped
+
     command:
       - php
       - artisan
@@ -51,36 +47,38 @@ services:
       - --tries=3
       - --timeout=120
       - --no-interaction
-    restart: unless-stopped
+
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - web
 
   db:
     image: postgres:16-alpine
+
+    restart: unless-stopped
+
     environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: vaultGuardian
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}
+        - pg_isready -U admin -d vaultGuardian
+
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 10s
+
     volumes:
       - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - web
-
-networks:
-  web:
-    driver: bridge
 
 volumes:
   pgdata:
