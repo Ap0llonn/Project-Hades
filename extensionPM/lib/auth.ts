@@ -67,7 +67,7 @@ const buildAuthUrl = async (forcePrompt: boolean) => {
     forcePrompt
   })
 
-  const url = new URL("/extension/auth/authorize", settings.backendBaseUrl)
+  const url = new URL("/extension/auth/start", settings.backendBaseUrl)
   url.searchParams.set("redirect_uri", redirectUri)
   url.searchParams.set("state", state)
 
