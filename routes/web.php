@@ -46,9 +46,3 @@ Route::domain(VaultDomains::vaultHost())
         require base_path('routes/Extension/auth.php');
         require base_path('routes/Auth/mfa.php');
     });
-Route::get('/debug-google', function () {
-    return [
-        'env_client_id' => env('GOOGLE_CLIENT_ID'),
-        'config' => config('services.google'),
-    ];
-});
