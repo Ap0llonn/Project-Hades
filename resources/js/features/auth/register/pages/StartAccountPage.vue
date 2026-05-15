@@ -159,23 +159,6 @@ function handleSubmit() {
                         </article>
                     </div>
                 </section>
-
-                <div class="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-on-surface-variant md:mt-10 md:gap-8" data-aos="fade-up" data-aos-delay="560">
-                    <div class="flex items-center gap-2">
-                        <Shield class="h-4 w-4 text-primary" />
-                        <span>256-bit AES encryption</span>
-                    </div>
-                    <div class="hidden h-4 w-px bg-outline-variant md:block" />
-                    <div class="flex items-center gap-2">
-                        <Fingerprint class="h-4 w-4 text-primary" />
-                        <span>Biometric authentication</span>
-                    </div>
-                    <div class="hidden h-4 w-px bg-outline-variant md:block" />
-                    <div class="flex items-center gap-2">
-                        <Eye class="h-4 w-4 text-primary" />
-                        <span>Zero-knowledge architecture</span>
-                    </div>
-                </div>
             </section>
         </div>
     </AuthLayout>
