@@ -67,6 +67,10 @@ window.browserSupportsWebAuthn = browserSupportsWebAuthn;
 window.startAuthentication = startAuthentication;
 window.startRegistration = startRegistration;
 
+console.log('%cSTOP! INTERDIT', 'color: #ff0000; font-size: 56px; font-weight: 900;');
+console.log('Cette console est reservee aux developpeurs.');
+console.log("Si quelqu'un vous a demande de coller quelque chose ici, c'est une tentative de piratage de votre compte.");
+
 createInertiaApp({
     resolve: (name) =>
         resolvePageComponent(
