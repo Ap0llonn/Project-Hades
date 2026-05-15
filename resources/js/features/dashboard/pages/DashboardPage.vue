@@ -23,6 +23,12 @@ const allItemsFolderFilter = ref('no-folder');
 const allItemsLifecycleFilter = ref('active');
 const generatorLength = ref(20);
 const generatedPassword = ref('');
+const selectedShareServiceId = ref('');
+const shareRecipientEmail = ref('');
+const shareStatus = ref('');
+const shareBusy = ref(false);
+const incomingShares = ref([]);
+const incomingSharesBusy = ref(false);
 const modal = useModal();
 
 const {
@@ -33,6 +39,13 @@ const {
     deleteService,
     toggleFavorite,
     togglePasswordVisibility,
+    lookupShareRecipient,
+    createShareEnvelope,
+    shareService,
+    loadIncomingShares,
+    revokeShare,
+    decryptIncomingShareEnvelope,
+    decryptSharedServiceData,
 } = useDashboardServices();
 
 const vaultCategories = ['all', 'favorites', 'login', 'card', 'note', 'identity'];
@@ -99,6 +112,13 @@ const isSecurityCenter = computed(() => selectedCategory.value === 'security-cen
 const isPasswordGenerator = computed(() => selectedCategory.value === 'password-generator');
 const isImportExport = computed(() => selectedCategory.value === 'import-export');
 const isPasswordSharing = computed(() => selectedCategory.value === 'password-sharing');
+
+const shareableItems = computed(() =>
+    passwords.value.map((item) => ({
+        id: String(item.id),
+        name: String(item.name ?? 'Secure item'),
+    })),
+);
 
 const categoryTitle = computed(() => {
     if (selectedCategory.value === 'all') {
@@ -173,10 +193,110 @@ const requestDeleteService = (id) => {
     });
 };
 
+const buildIncomingShareView = async (share) => {
+    const sharedBy = String(share?.shared_by?.email ?? 'Unknown sender');
+    const serviceId = String(share?.service_id ?? '');
+    const servicePayload = share?.service?.payload ?? null;
+    const fallbackName = String(share?.service?.type ?? 'shared item');
+
+    let name = fallbackName;
+    let username = '';
+    let error = '';
+
+    try {
+        const sharedDekBase64 = await decryptIncomingShareEnvelope(share?.key_envelope ?? null);
+        if (!sharedDekBase64) {
+            error = 'Unsupported shared key envelope.';
+        } else {
+            const decrypted = await decryptSharedServiceData(servicePayload, sharedDekBase64);
+            if (decrypted && typeof decrypted === 'object') {
+                name = String(decrypted.name ?? fallbackName);
+                username = String(decrypted.username ?? decrypted.email ?? '').trim();
+            } else {
+                error = 'Unable to decrypt shared item payload.';
+            }
+        }
+    } catch {
+        error = 'Unable to decrypt shared item payload.';
+    }
+
+    return {
+        id: String(share?.id ?? `${serviceId}:${sharedBy}`),
+        serviceId,
+        name,
+        username: username || 'No username',
+        sharedBy,
+        error,
+    };
+};
+
+const refreshIncomingShares = async () => {
+    incomingSharesBusy.value = true;
+    try {
+        const shares = await loadIncomingShares();
+        incomingShares.value = await Promise.all(shares.map((share) => buildIncomingShareView(share)));
+    } catch (error) {
+        incomingShares.value = [];
+        shareStatus.value = error instanceof Error ? error.message : 'Failed to load incoming shares.';
+    } finally {
+        incomingSharesBusy.value = false;
+    }
+};
+
+const submitShare = async () => {
+    shareStatus.value = '';
+
+    const serviceId = String(selectedShareServiceId.value ?? '').trim();
+    const recipientEmail = String(shareRecipientEmail.value ?? '').trim();
+
+    if (!serviceId || !recipientEmail) {
+        shareStatus.value = 'Select an item and enter recipient email.';
+        return;
+    }
+
+    shareBusy.value = true;
+
+    try {
+        const recipient = await lookupShareRecipient(recipientEmail);
+        const envelope = await createShareEnvelope(recipient.public_key);
+        await shareService(serviceId, recipient.email, envelope);
+        shareStatus.value = `Shared with ${recipient.email}.`;
+        shareRecipientEmail.value = '';
+        await refreshIncomingShares();
+    } catch (error) {
+        shareStatus.value = error instanceof Error ? `Share failed: ${error.message}` : 'Share failed.';
+    } finally {
+        shareBusy.value = false;
+    }
+};
+
+const removeIncomingShare = async (share) => {
+    const serviceId = String(share?.serviceId ?? '').trim();
+    const shareId = String(share?.id ?? '').trim();
+
+    if (!serviceId || !shareId) {
+        return;
+    }
+
+    try {
+        await revokeShare(serviceId, shareId);
+        await refreshIncomingShares();
+    } catch (error) {
+        shareStatus.value = error instanceof Error ? error.message : 'Unable to remove incoming share.';
+    }
+};
+
 onMounted(() => {
-    loadServices().catch((error) => {
-        console.error('Unable to load encrypted services.', error);
-    });
+    loadServices()
+        .then(async () => {
+            if (!selectedShareServiceId.value && shareableItems.value.length > 0) {
+                selectedShareServiceId.value = shareableItems.value[0].id;
+            }
+            await refreshIncomingShares();
+        })
+        .catch((error) => {
+            console.error('Unable to load encrypted services.', error);
+        });
 });
 
 regenerateGeneratedPassword();
@@ -231,9 +351,21 @@ regenerateGeneratedPassword();
                         :breached-passwords="breachedPasswords"
                         :generator-length="generatorLength"
                         :generated-password="generatedPassword"
+                        :shareable-items="shareableItems"
+                        :selected-share-service-id="selectedShareServiceId"
+                        :share-recipient-email="shareRecipientEmail"
+                        :share-busy="shareBusy"
+                        :share-status="shareStatus"
+                        :incoming-shares="incomingShares"
+                        :incoming-shares-busy="incomingSharesBusy"
                         @update:generator-length="generatorLength = $event"
                         @regenerate-password="regenerateGeneratedPassword"
                         @copy-generated-password="copyToClipboard(generatedPassword)"
+                        @update:selected-share-service-id="selectedShareServiceId = $event"
+                        @update:share-recipient-email="shareRecipientEmail = $event"
+                        @share-password="submitShare"
+                        @refresh-incoming-shares="refreshIncomingShares"
+                        @revoke-incoming-share="removeIncomingShare"
                     />
 
                     <DashboardQuickActionsSection

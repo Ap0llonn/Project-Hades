@@ -19,7 +19,7 @@ final class ShareServiceRequest extends FormRequest
             'key_envelope.ciphertextBase64' => ['required', 'string'],
             'key_envelope.algorithm' => ['required', 'string', 'in:libsodium.crypto_box_seal,libsodium.crypto_box_easy'],
             'key_envelope.ivBase64' => ['required_if:key_envelope.algorithm,libsodium.crypto_box_easy', 'string'],
-            'key_envelope.senderPublicKeyBase64' => ['sometimes', 'string'],
+            'key_envelope.senderPublicKeyBase64' => ['required_if:key_envelope.algorithm,libsodium.crypto_box_easy', 'string'],
             'key_envelope.version' => ['sometimes', 'integer', 'min:1'],
             'key_envelope.schema' => ['sometimes', 'integer', 'min:1'],
         ];

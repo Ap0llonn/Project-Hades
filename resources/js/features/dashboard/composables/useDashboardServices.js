@@ -1,5 +1,6 @@
 import { ref } from 'vue';
-import { CryptoEncryptor } from '../../../shared/utils';
+import { CryptoDecryptor, CryptoEncryptor } from '../../../shared/utils';
+import { dekService } from '../../../shared/services/dekService';
 import { vaultSession } from '../../shared/ts/VaultSession';
 import { vaultServiceApi } from '../services/vaultServiceApi';
 
@@ -11,6 +12,17 @@ const toUiType = (apiType) => (apiType === 'credit_card' ? 'card' : apiType);
 export const useDashboardServices = () => {
     const passwords = ref([]);
     const visiblePasswords = ref(new Set());
+    const serviceRecordsById = ref(new Map());
+    const cachedPrivateKeyBase64 = ref(null);
+
+    const toBase64FromBytes = (bytes) => {
+        let binary = '';
+        bytes.forEach((byte) => {
+            binary += String.fromCharCode(byte);
+        });
+
+        return btoa(binary);
+    };
 
     const passwordStrength = (password) => {
         if (password.length < 8) {
@@ -140,6 +152,7 @@ export const useDashboardServices = () => {
     const loadServices = async () => {
         await waitForUnlockedVault();
         const records = await vaultServiceApi.list();
+        serviceRecordsById.value = new Map(records.map((record) => [String(record.id), record]));
         const mapped = await Promise.all(records.map((record) => buildUiItemFromRecord(record)));
         passwords.value = mapped.filter((item) => item !== null);
     };
@@ -168,6 +181,7 @@ export const useDashboardServices = () => {
         });
 
         const newItem = await buildUiItemFromRecord(created);
+        serviceRecordsById.value.set(String(created.id), created);
         if (newItem !== null) {
             passwords.value.unshift(newItem);
         }
@@ -177,6 +191,7 @@ export const useDashboardServices = () => {
 
     const deleteService = async (id) => {
         await vaultServiceApi.remove(String(id));
+        serviceRecordsById.value.delete(String(id));
         passwords.value = passwords.value.filter((item) => String(item.id) !== String(id));
     };
 
@@ -212,6 +227,121 @@ export const useDashboardServices = () => {
         await vaultServiceApi.revokeShare(String(serviceId), String(shareId));
     };
 
+    const unwrapPrivateKeyForSharing = async () => {
+        await waitForUnlockedVault();
+
+        if (typeof cachedPrivateKeyBase64.value === 'string' && cachedPrivateKeyBase64.value.trim() !== '') {
+            return cachedPrivateKeyBase64.value;
+        }
+
+        const bootstrap = await dekService.fetchBootstrap();
+        const wrapper = bootstrap?.wrapped_private_key && typeof bootstrap.wrapped_private_key === 'object'
+            ? bootstrap.wrapped_private_key
+            : null;
+
+        const normalizedWrapper = wrapper?.wrapped_private_key && typeof wrapper.wrapped_private_key === 'object'
+            ? wrapper.wrapped_private_key
+            : wrapper;
+
+        const ciphertextBase64 = typeof normalizedWrapper?.ciphertext === 'string'
+            ? normalizedWrapper.ciphertext
+            : (typeof normalizedWrapper?.ciphertextBase64 === 'string' ? normalizedWrapper.ciphertextBase64 : '');
+        const ivBase64 = typeof normalizedWrapper?.iv === 'string'
+            ? normalizedWrapper.iv
+            : (typeof normalizedWrapper?.ivBase64 === 'string' ? normalizedWrapper.ivBase64 : '');
+
+        if (ciphertextBase64 === '' || ivBase64 === '') {
+            throw new Error('Unable to load private key wrapper for sharing.');
+        }
+
+        const privateKeyBase64 = await vaultSession.decryptPassword({
+            ciphertextBase64,
+            ivBase64,
+        });
+
+        cachedPrivateKeyBase64.value = privateKeyBase64;
+        return privateKeyBase64;
+    };
+
+    const createShareEnvelope = async (recipientPublicKeyBase64) => {
+        await waitForUnlockedVault();
+
+        const recipientPublicKey = String(recipientPublicKeyBase64 ?? '').trim();
+        if (recipientPublicKey === '') {
+            throw new Error('Recipient public key is required.');
+        }
+
+        const ownerPrivateKeyBase64 = await unwrapPrivateKeyForSharing();
+        const ownerDekBase64 = toBase64FromBytes(vaultSession.getDek());
+
+        const envelope = await CryptoEncryptor.encryptWithRecipientPublicAndSenderPrivateKey(
+            ownerDekBase64,
+            recipientPublicKey,
+            ownerPrivateKeyBase64,
+        );
+
+        return {
+            ...envelope,
+            version: 1,
+            schema: 1,
+        };
+    };
+
+    const decryptIncomingShareEnvelope = async (keyEnvelope) => {
+        if (!keyEnvelope || typeof keyEnvelope !== 'object') {
+            return null;
+        }
+
+        const algorithm = String(keyEnvelope.algorithm ?? '');
+        const ciphertextBase64 = String(keyEnvelope.ciphertextBase64 ?? '');
+
+        if (algorithm !== 'libsodium.crypto_box_easy') {
+            return null;
+        }
+
+        const ivBase64 = String(keyEnvelope.ivBase64 ?? '');
+        const senderPublicKeyBase64 = String(keyEnvelope.senderPublicKeyBase64 ?? '');
+        if (!ivBase64 || !senderPublicKeyBase64 || !ciphertextBase64) {
+            return null;
+        }
+
+        const recipientPrivateKeyBase64 = await unwrapPrivateKeyForSharing();
+
+        return CryptoDecryptor.decryptWithSenderPublicKey(
+            {
+                ciphertextBase64,
+                ivBase64,
+            },
+            senderPublicKeyBase64,
+            recipientPrivateKeyBase64,
+        );
+    };
+
+    const decryptSharedServiceData = async (encryptedPayload, sharedDekBase64) => {
+        if (!encryptedPayload || typeof encryptedPayload !== 'object') {
+            return null;
+        }
+
+        if (encryptedPayload?.schema === 'extension.plain_login') {
+            return encryptedPayload;
+        }
+
+        const ciphertextBase64 = String(encryptedPayload.ciphertextBase64 ?? '');
+        const ivBase64 = String(encryptedPayload.ivBase64 ?? '');
+
+        if (!ciphertextBase64 || !ivBase64) {
+            return null;
+        }
+
+        const decryptedJson = await CryptoDecryptor.decryptPasswordWithDek(
+            { ciphertextBase64, ivBase64 },
+            sharedDekBase64,
+        );
+
+        const parsed = JSON.parse(decryptedJson);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    };
+
     return {
         passwords,
         visiblePasswords,
@@ -222,6 +352,9 @@ export const useDashboardServices = () => {
         toggleFavorite,
         togglePasswordVisibility,
         lookupShareRecipient,
+        createShareEnvelope,
+        decryptIncomingShareEnvelope,
+        decryptSharedServiceData,
         shareService,
         loadIncomingShares,
         revokeShare,
