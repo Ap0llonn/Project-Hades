@@ -19,13 +19,13 @@ final class UpdateServiceRequest extends FormRequest
             'favorite' => ['sometimes', 'boolean'],
             'status' => ['sometimes', 'string', 'in:active,archived'],
             'payload' => ['sometimes', 'array'],
-            'payload.ciphertextBase64' => ['required_with:payload', 'string'],
-            'payload.ivBase64' => ['required_with:payload', 'string'],
-            'payload.version' => ['sometimes', 'integer'],
-            'payload.algorithm' => ['sometimes', 'string'],
-            'payload.encoding' => ['sometimes', 'string'],
-            'payload.schema' => ['sometimes', 'integer'],
-            'payload.createdAt' => ['sometimes', 'string'],
+            'payload.ciphertextBase64' => ['required_with:payload', 'string', 'regex:/^[A-Za-z0-9+\/]+={0,2}$/'],
+            'payload.ivBase64' => ['required_with:payload', 'string', 'regex:/^[A-Za-z0-9+\/]+={0,2}$/'],
+            'payload.version' => ['required_with:payload', 'integer', 'min:1'],
+            'payload.algorithm' => ['required_with:payload', 'string', 'in:libsodium.crypto_secretbox'],
+            'payload.encoding' => ['required_with:payload', 'string', 'in:json'],
+            'payload.schema' => ['required_with:payload', 'integer', 'in:1'],
+            'payload.createdAt' => ['required_with:payload', 'date'],
         ];
     }
 

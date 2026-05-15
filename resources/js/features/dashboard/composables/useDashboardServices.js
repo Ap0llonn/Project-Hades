@@ -90,28 +90,6 @@ export const useDashboardServices = () => {
             const payload = record?.payload;
             const itemType = toUiType(record.type ?? 'note');
 
-            if (payload?.schema === 'extension.plain_login' && itemType === 'login') {
-                const plainPassword = String(payload.password ?? '');
-                const plainUsername = String(payload.username ?? '').trim();
-                const plainName = String(payload.name ?? '').trim() || 'Login';
-                const plainUrl = String(payload.url ?? '').trim();
-
-                return {
-                    id: String(record.id),
-                    name: plainName,
-                    username: plainUsername,
-                    password: plainPassword,
-                    url: plainUrl,
-                    category: 'login',
-                    favorite: Boolean(record.favorite),
-                    note: String(payload.note ?? '').trim(),
-                    requiresMasterPasswordForNote: Boolean(payload.requireMasterPassword),
-                    lastUsed: formatLastUsed(record.updated_at),
-                    strength: passwordStrength(plainPassword),
-                    status: String(record.status ?? 'active'),
-                };
-            }
-
             const ciphertextBase64 = payload?.ciphertextBase64;
             const ivBase64 = payload?.ivBase64;
             if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
@@ -320,10 +298,6 @@ export const useDashboardServices = () => {
     const decryptSharedServiceData = async (encryptedPayload, sharedDekBase64) => {
         if (!encryptedPayload || typeof encryptedPayload !== 'object') {
             return null;
-        }
-
-        if (encryptedPayload?.schema === 'extension.plain_login') {
-            return encryptedPayload;
         }
 
         const ciphertextBase64 = String(encryptedPayload.ciphertextBase64 ?? '');

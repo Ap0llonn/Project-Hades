@@ -24,18 +24,7 @@ final class CreateExtensionServiceController
             type: 'login',
             favorite: false,
             status: 'active',
-            payload: [
-                'schema' => 'extension.plain_login',
-                'encoding' => 'plain',
-                'name' => (string) ($validated['name'] ?? ''),
-                'type' => 'login',
-                'username' => (string) ($validated['username'] ?? ''),
-                'password' => (string) ($validated['password'] ?? ''),
-                'url' => (string) ($validated['url'] ?? ''),
-                'note' => '',
-                'requireMasterPassword' => false,
-                'createdAt' => now()->toIso8601String(),
-            ],
+            payload: is_array($validated['payload'] ?? null) ? $validated['payload'] : [],
         ));
 
         return response()->json([
@@ -44,4 +33,3 @@ final class CreateExtensionServiceController
         ], 201);
     }
 }
-

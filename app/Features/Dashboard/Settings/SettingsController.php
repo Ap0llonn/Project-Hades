@@ -4,6 +4,8 @@ namespace App\Features\Dashboard\Settings;
 
 use App\Features\Auth\OAuth\List\FetchOAuthLinksHandler;
 use App\Features\Auth\OAuth\List\FetchOAuthLinksQuery;
+use App\Features\Dashboard\Settings\Sessions\Read\ListActiveSessionsHandler;
+use App\Features\Dashboard\Settings\Sessions\Read\ListActiveSessionsQuery;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +16,11 @@ use Spatie\LaravelPasskeys\Models\Passkey;
 
 class SettingsController
 {
-    public function __invoke(Request $request, FetchOAuthLinksHandler $fetchOAuthLinksHandler): Response
+    public function __invoke(
+        Request $request,
+        FetchOAuthLinksHandler $fetchOAuthLinksHandler,
+        ListActiveSessionsHandler $listActiveSessionsHandler,
+    ): Response
     {
         /** @var User|null $user */
         $user = Auth::user();
@@ -57,7 +63,19 @@ class SettingsController
             }
         }
 
+        $sessions = $user !== null
+            ? $listActiveSessionsHandler->handle(new ListActiveSessionsQuery(
+                userId: (string) $user->id,
+                currentSessionId: (string) $request->session()->getId(),
+            ))
+            : [];
+
         return Inertia::render('dashboard/settings/pages/SettingsPage', [
+            'profile' => [
+                'email' => (string) ($user?->email ?? ''),
+                'first_name' => (string) ($user?->first_name ?? ''),
+                'last_name' => (string) ($user?->last_name ?? ''),
+            ],
             'security' => [
                 'mfa_activated' =>  $user->mfa->mfa_activated ?? false,
                 'totp_enabled' => $user->mfa->totp_enabled ?? false,
@@ -65,7 +83,8 @@ class SettingsController
                 'passkeys' => $passkeys,
                 'oauth_providers' => $oauthProviders,
                 'oauth_passkey_prompt' => $oauthPasskeyPrompt,
-            ]
+            ],
+            'sessions' => $sessions,
         ]);
     }
 }

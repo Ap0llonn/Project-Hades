@@ -58,15 +58,62 @@ export const ensureDefaultSettings = async () => {
 
 export const getSettings = async (): Promise<ExtensionSettings> => {
   const stored = await getFromArea<ExtensionSettings>(chrome.storage.local, STORAGE_KEYS.settings)
-  return {
+  const merged = {
     ...DEFAULT_SETTINGS,
     ...stored
+  }
+
+  return sanitizeSettings(merged)
+}
+
+const sanitizeBackendBaseUrl = (value: string) => {
+  const raw = value.trim()
+  if (!raw) {
+    return DEFAULT_SETTINGS.backendBaseUrl
+  }
+
+  try {
+    const url = new URL(raw)
+    const protocol = url.protocol.toLowerCase()
+    if (protocol !== "https:") {
+      return DEFAULT_SETTINGS.backendBaseUrl
+    }
+
+    url.pathname = "/"
+    url.search = ""
+    url.hash = ""
+    return url.toString().replace(/\/+$/, "")
+  } catch {
+    return DEFAULT_SETTINGS.backendBaseUrl
+  }
+}
+
+const clampInt = (value: number, fallback: number, min: number, max: number) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) {
+    return fallback
+  }
+
+  return Math.min(max, Math.max(min, Math.floor(parsed)))
+}
+
+const sanitizeSettings = (settings: ExtensionSettings): ExtensionSettings => {
+  return {
+    backendBaseUrl: sanitizeBackendBaseUrl(settings.backendBaseUrl),
+    lockTimeoutMinutes: clampInt(settings.lockTimeoutMinutes, DEFAULT_SETTINGS.lockTimeoutMinutes, 1, 120),
+    sensitiveActionWindowSeconds: clampInt(
+      settings.sensitiveActionWindowSeconds,
+      DEFAULT_SETTINGS.sensitiveActionWindowSeconds,
+      15,
+      600
+    )
   }
 }
 
 export const setSettings = async (settings: ExtensionSettings) => {
+  const sanitized = sanitizeSettings(settings)
   await setInArea(chrome.storage.local, {
-    [STORAGE_KEYS.settings]: settings
+    [STORAGE_KEYS.settings]: sanitized
   })
 }
 

@@ -6,6 +6,8 @@ use App\Features\Dashboard\Service\Share\Shared\RecipientPublicKeyDirectory;
 use App\Features\Dashboard\Service\Share\Shared\ServiceShareResponse;
 use Ecotone\Modelling\CommandBus;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 final class ShareServiceController
 {
@@ -49,8 +51,21 @@ final class ShareServiceController
             ], 404);
         }
 
+        $share = $result->share->loadMissing(['service', 'owner']);
+
+        try {
+            $serviceName = trim((string) ($share->service?->name ?? 'Shared vault item'));
+            Mail::to($recipient->email)->send(new PasswordShareNotificationEmail(
+                ownerEmail: (string) ($share->owner?->email ?? $user->email ?? 'Vault user'),
+                serviceName: $serviceName !== '' ? $serviceName : 'Shared vault item',
+                dashboardUrl: route('dashboard'),
+            ));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
         return response()->json([
-            'data' => ServiceShareResponse::fromModel($result->share->loadMissing(['service', 'owner'])),
+            'data' => ServiceShareResponse::fromModel($share),
         ], $result->status === 'created' ? 201 : 200);
     }
 }
