@@ -39,26 +39,8 @@ const authorizedFetch = async (
   return response
 }
 
-export const saveService = async (draft: ServiceDraft): Promise<SaveServiceResult> => {
-  const response = await authorizedFetch("/api/extension/services", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      name: draft.name,
-      username: draft.username,
-      password: draft.password,
-      url: draft.url
-    })
-  })
-
-  const payload = (await response.json().catch(() => null)) as
-    | { id?: string; message?: string; status?: string; data?: { id?: string } }
-    | null
-
-  return {
-    id: payload?.id ?? payload?.data?.id,
-    status: payload?.message ?? payload?.status ?? "Credential saved to vault."
-  }
+export const saveService = async (_draft: ServiceDraft): Promise<SaveServiceResult> => {
+  throw new Error(
+    "Secure extension save is temporarily disabled. Use the web dashboard to save new vault items."
+  )
 }

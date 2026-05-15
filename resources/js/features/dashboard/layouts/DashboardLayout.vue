@@ -15,37 +15,14 @@ import {
     ShieldCheck,
     Star,
     Users,
+    ShieldHalf
 } from 'lucide-vue-next';
 
 defineProps({
     selectedCategory: {
         type: String,
         required: true,
-    },
-    totalCount: {
-        type: Number,
-        required: true,
-    },
-    favoriteCount: {
-        type: Number,
-        required: true,
-    },
-    loginCount: {
-        type: Number,
-        required: true,
-    },
-    cardCount: {
-        type: Number,
-        required: true,
-    },
-    noteCount: {
-        type: Number,
-        required: true,
-    },
-    securityAlertCount: {
-        type: Number,
-        required: true,
-    },
+    }
 });
 
 const emit = defineEmits(['update:selectedCategory']);
@@ -68,7 +45,7 @@ const selectCategory = (category) => {
             <div class="flex items-center border-b border-outline-variant p-6">
                 <div class="flex items-center gap-3">
                     <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-                        <Lock class="h-5 w-5 text-white" />
+                        <ShieldHalf class="h-5 w-5 text-white" />
                     </div>
                     <span class="text-xl font-bold tracking-tight text-on-surface">VaultGuardian</span>
                 </div>
@@ -90,7 +67,7 @@ const selectCategory = (category) => {
                     <p class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Features</p>
                 </div>
 
-                <button>
+                <button
                     type="button"
                     class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
                     :class="selectedCategory === 'security-center' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"

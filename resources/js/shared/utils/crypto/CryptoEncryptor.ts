@@ -41,6 +41,7 @@ export interface AsymmetricEncryptedPayload {
     ciphertextBase64: string;
     algorithm: 'libsodium.crypto_box_seal' | 'libsodium.crypto_box_easy';
     ivBase64?: string;
+    senderPublicKeyBase64?: string;
 }
 
 export class CryptoEncryptor {
@@ -255,6 +256,45 @@ export class CryptoEncryptor {
         return {
             ciphertextBase64: toBase64(ciphertext),
             algorithm: 'libsodium.crypto_box_seal',
+        };
+    }
+
+    static async encryptWithRecipientPublicAndSenderPrivateKey(
+        plainText: string,
+        recipientPublicKey: BinarySource,
+        senderPrivateKey: BinarySource,
+    ): Promise<AsymmetricEncryptedPayload> {
+        if (typeof plainText !== 'string') {
+            throw new Error('plainText must be a string.');
+        }
+
+        const sodium = await getSodium();
+        const recipientPublicKeyBytes = normalizeBytes(recipientPublicKey, 'recipientPublicKey');
+        const senderPrivateKeyBytes = normalizeBytes(senderPrivateKey, 'senderPrivateKey');
+
+        if (recipientPublicKeyBytes.length !== sodium.crypto_box_PUBLICKEYBYTES) {
+            throw new Error(`recipientPublicKey must be ${sodium.crypto_box_PUBLICKEYBYTES} bytes.`);
+        }
+
+        if (senderPrivateKeyBytes.length !== sodium.crypto_box_SECRETKEYBYTES) {
+            throw new Error(`senderPrivateKey must be ${sodium.crypto_box_SECRETKEYBYTES} bytes.`);
+        }
+
+        const nonce = await randomCryptoBytes(sodium.crypto_box_NONCEBYTES);
+        const ciphertext = sodium.crypto_box_easy(
+            utf8ToBytes(plainText),
+            nonce,
+            recipientPublicKeyBytes,
+            senderPrivateKeyBytes,
+        );
+
+        const senderPublicKeyBytes = sodium.crypto_scalarmult_base(senderPrivateKeyBytes);
+
+        return {
+            ciphertextBase64: toBase64(ciphertext),
+            algorithm: 'libsodium.crypto_box_easy',
+            ivBase64: toBase64(nonce),
+            senderPublicKeyBase64: toBase64(senderPublicKeyBytes),
         };
     }
 }

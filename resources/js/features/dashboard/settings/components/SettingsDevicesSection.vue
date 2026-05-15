@@ -1,12 +1,53 @@
+<script setup>
+import SettingsSecuritySessionsSection from './security/SettingsSecuritySessionsSection.vue';
+
+const props = defineProps({
+    sessions: {
+        type: Array,
+        default: () => [],
+    },
+    sessionsLoading: {
+        type: Boolean,
+        default: false,
+    },
+    revokingSessionId: {
+        type: String,
+        default: '',
+    },
+    isRevokingOtherSessions: {
+        type: Boolean,
+        default: false,
+    },
+    sessionsStatusMessage: {
+        type: String,
+        default: '',
+    },
+    sessionsErrorMessage: {
+        type: String,
+        default: '',
+    },
+});
+
+const emit = defineEmits([
+    'refresh-sessions',
+    'revoke-session',
+    'revoke-other-sessions',
+]);
+</script>
+
 <template>
-    <div class="space-y-3">
-        <article class="rounded-lg border border-outline-variant bg-surface-container-low p-4">
-            <p class="font-medium text-on-surface">Current Device</p>
-            <p class="mt-1 text-sm text-on-surface-variant">Windows 11 | Chrome | Active now</p>
-        </article>
-        <article class="rounded-lg border border-outline-variant bg-surface-container-low p-4">
-            <p class="font-medium text-on-surface">iPhone 16</p>
-            <p class="mt-1 text-sm text-on-surface-variant">iOS | Last active 2 hours ago</p>
-        </article>
-    </div>
+    <SettingsSecuritySessionsSection
+        title="Active Devices"
+        description="Review active web and extension sessions and revoke access on other devices."
+        :sessions="props.sessions"
+        :is-loading="props.sessionsLoading"
+        :revoking-session-id="props.revokingSessionId"
+        :is-revoking-others="props.isRevokingOtherSessions"
+        :status-message="props.sessionsStatusMessage"
+        :error-message="props.sessionsErrorMessage"
+        :show-top-border="false"
+        @refresh-sessions="emit('refresh-sessions')"
+        @revoke-session="emit('revoke-session', $event)"
+        @revoke-other-sessions="emit('revoke-other-sessions')"
+    />
 </template>

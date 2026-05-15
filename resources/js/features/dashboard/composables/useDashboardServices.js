@@ -1,5 +1,6 @@
 import { ref } from 'vue';
-import { CryptoEncryptor } from '../../../shared/utils';
+import { CryptoDecryptor, CryptoEncryptor } from '../../../shared/utils';
+import { dekService } from '../../../shared/services/dekService';
 import { vaultSession } from '../../shared/ts/VaultSession';
 import { vaultServiceApi } from '../services/vaultServiceApi';
 
@@ -11,6 +12,17 @@ const toUiType = (apiType) => (apiType === 'credit_card' ? 'card' : apiType);
 export const useDashboardServices = () => {
     const passwords = ref([]);
     const visiblePasswords = ref(new Set());
+    const serviceRecordsById = ref(new Map());
+    const cachedPrivateKeyBase64 = ref(null);
+
+    const toBase64FromBytes = (bytes) => {
+        let binary = '';
+        bytes.forEach((byte) => {
+            binary += String.fromCharCode(byte);
+        });
+
+        return btoa(binary);
+    };
 
     const passwordStrength = (password) => {
         if (password.length < 8) {
@@ -73,41 +85,28 @@ export const useDashboardServices = () => {
         address: (item.address ?? '').trim(),
     });
 
+    const decryptServicePayloadRecord = async (record) => {
+        const payload = record?.payload;
+        const ciphertextBase64 = payload?.ciphertextBase64;
+        const ivBase64 = payload?.ivBase64;
+        if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
+            throw new Error('Service payload is invalid.');
+        }
+
+        const decryptedJson = await vaultSession.decryptPassword({ ciphertextBase64, ivBase64 });
+        const parsed = JSON.parse(decryptedJson);
+
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Service payload is invalid.');
+        }
+
+        return parsed;
+    };
+
     const buildUiItemFromRecord = async (record) => {
         try {
-            const payload = record?.payload;
             const itemType = toUiType(record.type ?? 'note');
-
-            if (payload?.schema === 'extension.plain_login' && itemType === 'login') {
-                const plainPassword = String(payload.password ?? '');
-                const plainUsername = String(payload.username ?? '').trim();
-                const plainName = String(payload.name ?? '').trim() || 'Login';
-                const plainUrl = String(payload.url ?? '').trim();
-
-                return {
-                    id: String(record.id),
-                    name: plainName,
-                    username: plainUsername,
-                    password: plainPassword,
-                    url: plainUrl,
-                    category: 'login',
-                    favorite: Boolean(record.favorite),
-                    note: String(payload.note ?? '').trim(),
-                    requiresMasterPasswordForNote: Boolean(payload.requireMasterPassword),
-                    lastUsed: formatLastUsed(record.updated_at),
-                    strength: passwordStrength(plainPassword),
-                    status: String(record.status ?? 'active'),
-                };
-            }
-
-            const ciphertextBase64 = payload?.ciphertextBase64;
-            const ivBase64 = payload?.ivBase64;
-            if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
-                return null;
-            }
-
-            const decryptedJson = await vaultSession.decryptPassword({ ciphertextBase64, ivBase64 });
-            const item = JSON.parse(decryptedJson);
+            const item = await decryptServicePayloadRecord(record);
             const cardLastFour = String(item.cardNumber ?? '').replace(/\s+/g, '').slice(-4);
             const identityLabel = String(item.email ?? '').trim() || String(item.fullName ?? '').trim() || 'Identity';
 
@@ -140,6 +139,7 @@ export const useDashboardServices = () => {
     const loadServices = async () => {
         await waitForUnlockedVault();
         const records = await vaultServiceApi.list();
+        serviceRecordsById.value = new Map(records.map((record) => [String(record.id), record]));
         const mapped = await Promise.all(records.map((record) => buildUiItemFromRecord(record)));
         passwords.value = mapped.filter((item) => item !== null);
     };
@@ -168,6 +168,7 @@ export const useDashboardServices = () => {
         });
 
         const newItem = await buildUiItemFromRecord(created);
+        serviceRecordsById.value.set(String(created.id), created);
         if (newItem !== null) {
             passwords.value.unshift(newItem);
         }
@@ -177,7 +178,86 @@ export const useDashboardServices = () => {
 
     const deleteService = async (id) => {
         await vaultServiceApi.remove(String(id));
+        serviceRecordsById.value.delete(String(id));
         passwords.value = passwords.value.filter((item) => String(item.id) !== String(id));
+    };
+
+    const getServiceForEdit = async (id) => {
+        await waitForUnlockedVault();
+
+        const serviceId = String(id);
+        const record = serviceRecordsById.value.get(serviceId);
+        if (!record) {
+            throw new Error('Service not found.');
+        }
+
+        const payload = await decryptServicePayloadRecord(record);
+
+        return {
+            id: serviceId,
+            type: toUiType(record.type ?? 'note'),
+            status: String(record.status ?? 'active'),
+            favorite: Boolean(record.favorite),
+            name: String(payload.name ?? '').trim(),
+            username: String(payload.username ?? '').trim(),
+            password: String(payload.password ?? ''),
+            url: String(payload.url ?? '').trim(),
+            cardholder: String(payload.cardholder ?? '').trim(),
+            cardNumber: String(payload.cardNumber ?? '').trim(),
+            expiry: String(payload.expiry ?? '').trim(),
+            cvc: String(payload.cvc ?? '').trim(),
+            note: String(payload.note ?? '').trim(),
+            requireMasterPassword: Boolean(payload.requireMasterPassword),
+            fullName: String(payload.fullName ?? '').trim(),
+            email: String(payload.email ?? '').trim(),
+            phone: String(payload.phone ?? '').trim(),
+            address: String(payload.address ?? '').trim(),
+        };
+    };
+
+    const updateService = async (id, item) => {
+        await waitForUnlockedVault();
+
+        const serviceId = String(id);
+        const currentRecord = serviceRecordsById.value.get(serviceId);
+        if (!currentRecord) {
+            throw new Error('Service not found.');
+        }
+
+        const plainPayload = normalizePayloadForEncryption(item);
+        const encryptedPayload = await CryptoEncryptor.encryptWithKey(
+            JSON.stringify(plainPayload),
+            vaultSession.getDek(),
+        );
+
+        const createdAt = typeof currentRecord?.payload?.createdAt === 'string'
+            && currentRecord.payload.createdAt.trim() !== ''
+            ? currentRecord.payload.createdAt
+            : new Date().toISOString();
+
+        const updatedRecord = await vaultServiceApi.update(serviceId, {
+            type: toApiType(item.type ?? toUiType(currentRecord.type ?? 'note')),
+            favorite: Boolean(item.favorite),
+            status: item.status === 'archived' ? 'archived' : 'active',
+            payload: {
+                ...encryptedPayload,
+                version: 1,
+                algorithm: 'libsodium.crypto_secretbox',
+                encoding: 'json',
+                schema: 1,
+                createdAt,
+            },
+        });
+
+        serviceRecordsById.value.set(String(updatedRecord.id), updatedRecord);
+        const nextUiItem = await buildUiItemFromRecord(updatedRecord);
+        if (nextUiItem !== null) {
+            passwords.value = passwords.value.map((entry) =>
+                String(entry.id) === String(nextUiItem.id) ? nextUiItem : entry,
+            );
+        }
+
+        return nextUiItem;
     };
 
     const toggleFavorite = async (item) => {
@@ -212,6 +292,117 @@ export const useDashboardServices = () => {
         await vaultServiceApi.revokeShare(String(serviceId), String(shareId));
     };
 
+    const unwrapPrivateKeyForSharing = async () => {
+        await waitForUnlockedVault();
+
+        if (typeof cachedPrivateKeyBase64.value === 'string' && cachedPrivateKeyBase64.value.trim() !== '') {
+            return cachedPrivateKeyBase64.value;
+        }
+
+        const bootstrap = await dekService.fetchBootstrap();
+        const wrapper = bootstrap?.wrapped_private_key && typeof bootstrap.wrapped_private_key === 'object'
+            ? bootstrap.wrapped_private_key
+            : null;
+
+        const normalizedWrapper = wrapper?.wrapped_private_key && typeof wrapper.wrapped_private_key === 'object'
+            ? wrapper.wrapped_private_key
+            : wrapper;
+
+        const ciphertextBase64 = typeof normalizedWrapper?.ciphertext === 'string'
+            ? normalizedWrapper.ciphertext
+            : (typeof normalizedWrapper?.ciphertextBase64 === 'string' ? normalizedWrapper.ciphertextBase64 : '');
+        const ivBase64 = typeof normalizedWrapper?.iv === 'string'
+            ? normalizedWrapper.iv
+            : (typeof normalizedWrapper?.ivBase64 === 'string' ? normalizedWrapper.ivBase64 : '');
+
+        if (ciphertextBase64 === '' || ivBase64 === '') {
+            throw new Error('Unable to load private key wrapper for sharing.');
+        }
+
+        const privateKeyBase64 = await vaultSession.decryptPassword({
+            ciphertextBase64,
+            ivBase64,
+        });
+
+        cachedPrivateKeyBase64.value = privateKeyBase64;
+        return privateKeyBase64;
+    };
+
+    const createShareEnvelope = async (recipientPublicKeyBase64) => {
+        await waitForUnlockedVault();
+
+        const recipientPublicKey = String(recipientPublicKeyBase64 ?? '').trim();
+        if (recipientPublicKey === '') {
+            throw new Error('Recipient public key is required.');
+        }
+
+        const ownerPrivateKeyBase64 = await unwrapPrivateKeyForSharing();
+        const ownerDekBase64 = toBase64FromBytes(vaultSession.getDek());
+
+        const envelope = await CryptoEncryptor.encryptWithRecipientPublicAndSenderPrivateKey(
+            ownerDekBase64,
+            recipientPublicKey,
+            ownerPrivateKeyBase64,
+        );
+
+        return {
+            ...envelope,
+            version: 1,
+            schema: 1,
+        };
+    };
+
+    const decryptIncomingShareEnvelope = async (keyEnvelope) => {
+        if (!keyEnvelope || typeof keyEnvelope !== 'object') {
+            return null;
+        }
+
+        const algorithm = String(keyEnvelope.algorithm ?? '');
+        const ciphertextBase64 = String(keyEnvelope.ciphertextBase64 ?? '');
+
+        if (algorithm !== 'libsodium.crypto_box_easy') {
+            return null;
+        }
+
+        const ivBase64 = String(keyEnvelope.ivBase64 ?? '');
+        const senderPublicKeyBase64 = String(keyEnvelope.senderPublicKeyBase64 ?? '');
+        if (!ivBase64 || !senderPublicKeyBase64 || !ciphertextBase64) {
+            return null;
+        }
+
+        const recipientPrivateKeyBase64 = await unwrapPrivateKeyForSharing();
+
+        return CryptoDecryptor.decryptWithSenderPublicKey(
+            {
+                ciphertextBase64,
+                ivBase64,
+            },
+            senderPublicKeyBase64,
+            recipientPrivateKeyBase64,
+        );
+    };
+
+    const decryptSharedServiceData = async (encryptedPayload, sharedDekBase64) => {
+        if (!encryptedPayload || typeof encryptedPayload !== 'object') {
+            return null;
+        }
+
+        const ciphertextBase64 = String(encryptedPayload.ciphertextBase64 ?? '');
+        const ivBase64 = String(encryptedPayload.ivBase64 ?? '');
+
+        if (!ciphertextBase64 || !ivBase64) {
+            return null;
+        }
+
+        const decryptedJson = await CryptoDecryptor.decryptPasswordWithDek(
+            { ciphertextBase64, ivBase64 },
+            sharedDekBase64,
+        );
+
+        const parsed = JSON.parse(decryptedJson);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    };
+
     return {
         passwords,
         visiblePasswords,
@@ -219,9 +410,14 @@ export const useDashboardServices = () => {
         loadServices,
         createService,
         deleteService,
+        getServiceForEdit,
+        updateService,
         toggleFavorite,
         togglePasswordVisibility,
         lookupShareRecipient,
+        createShareEnvelope,
+        decryptIncomingShareEnvelope,
+        decryptSharedServiceData,
         shareService,
         loadIncomingShares,
         revokeShare,
