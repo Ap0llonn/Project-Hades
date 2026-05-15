@@ -13,6 +13,7 @@ final class ChangePasswordController
             userId: (string) $request->user()->id,
             currentPassword: (string) $request->input('current_password'),
             newPassword: (string) $request->input('password'),
+            wrappedDek: is_array($request->input('wrapped_dek')) ? $request->input('wrapped_dek') : [],
         ));
 
         return response()->json(['message' => 'Password updated successfully.']);

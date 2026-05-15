@@ -8,5 +8,6 @@ final readonly class ChangePasswordCommand
         public string $userId,
         public string $currentPassword,
         public string $newPassword,
+        public array $wrappedDek,
     ) {}
 }

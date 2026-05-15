@@ -3,6 +3,8 @@ import { computed, ref } from 'vue';
 import { X, Eye, EyeOff } from 'lucide-vue-next';
 import axios from 'axios';
 import PasswordEntropyVerification from '../../../../../auth/register/components/PasswordEntropyVerification.vue';
+import { CryptoEncryptor } from '../../../../../../shared/utils';
+import { vaultSession } from '../../../../../shared/ts/VaultSession';
 import {
     MIN_PASSWORD_LENGTH,
     MIN_ZXCVBN_SCORE,
@@ -40,13 +42,36 @@ async function submit() {
     submitting.value = true;
 
     try {
+        const wrappedDek = await CryptoEncryptor.wrapKeyWithPassword(
+            vaultSession.getDek(),
+            newPassword.value,
+        );
+
         await axios.put('/settings/password', {
             current_password: currentPassword.value,
             password: newPassword.value,
             password_confirmation: confirmPassword.value,
+            wrapped_dek: {
+                ciphertext: wrappedDek.ciphertextBase64,
+                iv: wrappedDek.ivBase64,
+                salt: wrappedDek.saltBase64,
+                keyLengthBits: wrappedDek.keyLengthBits,
+                kdf: {
+                    algorithm: wrappedDek.kdfAlgorithm,
+                    opsLimit: wrappedDek.argonOpsLimit,
+                    memoryKb: wrappedDek.argonMemoryKb,
+                    type: wrappedDek.argonType,
+                },
+            },
         });
         emit('close');
     } catch (e: any) {
+        const localError = e instanceof Error ? e.message : '';
+        if (localError.toLowerCase().includes('vault locked')) {
+            error.value = 'Vault is locked. Please sign in again before changing your password.';
+            return;
+        }
+
         const data = e?.response?.data;
         const firstError = data?.errors
             ? Object.values(data.errors as Record<string, string[]>).flat()[0]
