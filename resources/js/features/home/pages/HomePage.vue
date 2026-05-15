@@ -5,6 +5,7 @@ import Rellax from 'rellax';
 import { Eye, Fingerprint, Key, Lock, Shield, Zap } from 'lucide-vue-next';
 import DefaultLayout from '../../../shared/layouts/DefaultLayout.vue';
 import HomePricingSection from '../components/HomePricingSection.vue';
+import HomeTrustedBySection from '../components/HomeTrustedBySection.vue';
 
 const bestFeatures = [
     {
@@ -151,6 +152,8 @@ onBeforeUnmount(() => {
 
                 </section>
 
+
+
                 <section class="mx-auto w-full max-w-7xl px-6 pb-24 pt-0 md:-mt-8 md:min-h-[78vh]">
                     <div class="relative mx-auto flex max-w-7xl flex-col items-center gap-6 md:block md:h-[900px]">
                         <article
@@ -190,6 +193,8 @@ onBeforeUnmount(() => {
                         </article>
                     </div>
                 </section>
+
+                <HomeTrustedBySection />
 
                 <section id="features" class="mx-auto w-full max-w-7xl px-6 py-24">
                     <div class="mb-16 text-center" data-aos="fade-up">
