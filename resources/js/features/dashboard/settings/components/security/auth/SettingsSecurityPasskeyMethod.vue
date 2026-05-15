@@ -266,7 +266,9 @@ const createPasskey = async (name, masterPassword) => {
     });
 };
 
-const openPasskeyRegistrationModal = (forced = false) => {
+const openPasskeyRegistrationModal = (forcedMode) => {
+    const forced = forcedMode === true;
+
     if (!passkeySupported.value) {
         modal.danger({
             title: 'Passkeys unavailable',
@@ -278,9 +280,9 @@ const openPasskeyRegistrationModal = (forced = false) => {
     }
 
     modal.form({
-        title: forced ? 'Passkey setup required' : 'Register passkey',
+        title: forced ? 'OAuth Linking Requires Passkey Setup' : 'Register passkey',
         message: forced
-            ? 'Complete passkey setup now to finish OAuth account linking.'
+            ? 'You linked an OAuth account (Google or Apple). To secure your vault key wrapper, passkey setup is required now before continuing.'
             : 'Save a passkey to sign in quickly without typing your master password.',
         confirmLabel: 'Register',
         cancelLabel: forced ? null : 'Cancel',
@@ -324,6 +326,14 @@ const openPasskeyRegistrationModal = (forced = false) => {
     });
 };
 
+const openStandardPasskeyRegistrationModal = () => {
+    openPasskeyRegistrationModal(false);
+};
+
+const openEnforcedPasskeyRegistrationModal = () => {
+    openPasskeyRegistrationModal(true);
+};
+
 watch(
     () => settingProps.forcePasskeyPrompt,
     (value) => {
@@ -339,7 +349,7 @@ watch(
         }
 
         autoPromptTriggerKey.value = triggerKey;
-        openPasskeyRegistrationModal(true);
+        openEnforcedPasskeyRegistrationModal();
     },
     { immediate: true, deep: true },
 );
@@ -388,7 +398,7 @@ const removePasskey = (passkeyId) => {
                     ? 'border-primary text-primary hover:bg-primary hover:text-on-primary'
                     : 'border-outline-variant text-on-surface-variant cursor-not-allowed'"
                 :disabled="!passkeySupported"
-                @click="openPasskeyRegistrationModal"
+                @click="openStandardPasskeyRegistrationModal"
             >
                 Register
             </button>

@@ -57,6 +57,9 @@ const handleUnlink = (providerKey) => {
     <section class="border-t border-outline-variant pt-6">
         <p class="font-medium text-on-surface">OAuth Account Linking</p>
         <p class="mt-1 text-sm text-on-surface-variant">Google and Apple can be linked for sign-in. OAuth cannot create new accounts.</p>
+        <p class="mt-1 text-sm text-on-surface-variant">
+            Linking an OAuth provider requires immediate passkey setup to complete account security.
+        </p>
 
         <div class="mt-4 divide-y divide-outline-variant">
             <div
@@ -93,4 +96,3 @@ const handleUnlink = (providerKey) => {
         </div>
     </section>
 </template>
-
