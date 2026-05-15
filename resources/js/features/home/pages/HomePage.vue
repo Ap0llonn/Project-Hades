@@ -4,6 +4,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import Rellax from 'rellax';
 import { Eye, Fingerprint, Key, Lock, Shield, Zap } from 'lucide-vue-next';
 import DefaultLayout from '../../../shared/layouts/DefaultLayout.vue';
+import HomePricingSection from '../components/HomePricingSection.vue';
+import HomeTrustedBySection from '../components/HomeTrustedBySection.vue';
 
 const bestFeatures = [
     {
@@ -118,7 +120,7 @@ onBeforeUnmount(() => {
             <div class="fixed bottom-0 right-1/4 h-96 w-96 rounded-full bg-blue-400 opacity-10 blur-[120px]" />
 
             <div class="relative z-10">
-                <section class="mx-auto w-full max-w-7xl px-6 py-20 text-center" data-aos="fade-up">
+                <section class="mx-auto w-full max-w-7xl px-6 pb-10 pt-20 md:pb-8 md:pt-24 text-center" data-aos="fade-up">
                 <h1 class="mb-6 text-5xl tracking-tight text-gray-900 sm:text-6xl md:text-8xl" data-aos="fade-up" data-aos-delay="80">
                     Your digital life,
                     <br />
@@ -150,10 +152,12 @@ onBeforeUnmount(() => {
 
                 </section>
 
-                <section class="mx-auto w-full max-w-7xl px-6 pb-36 pt-14 md:min-h-[94vh] md:pb-56 md:pt-24">
-                    <div class="relative mx-auto flex max-w-7xl flex-col items-center gap-6 md:block md:h-[760px]">
+
+
+                <section class="mx-auto w-full max-w-7xl px-6 pb-24 pt-0 md:-mt-8 md:min-h-[78vh]">
+                    <div class="relative mx-auto flex max-w-7xl flex-col items-center gap-6 md:block md:h-[900px]">
                         <article
-                            class="home-parallax-screen relative z-20 aspect-[381/829] w-full max-w-[260px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:left-0 md:top-[210px] md:h-[520px] md:w-[239px] md:max-w-none"
+                            class="home-parallax-screen relative z-20 aspect-[381/829] w-full max-w-[285px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:left-0 md:top-[170px] md:h-[620px] md:w-[285px] md:max-w-none"
                             data-rellax-speed="6"
                         >
                             <img
@@ -165,7 +169,7 @@ onBeforeUnmount(() => {
                         </article>
 
                         <article
-                            class="home-parallax-screen relative z-10 aspect-[1325/807] w-full max-w-[560px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:left-1/2 md:top-0 md:w-[64%] md:max-w-none md:-translate-x-1/2"
+                            class="home-parallax-screen relative z-10 aspect-[1325/807] w-full max-w-[680px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:left-1/2 md:top-[20px] md:w-[78%] md:max-w-none md:-translate-x-1/2"
                             data-rellax-speed="2"
                         >
                             <img
@@ -177,7 +181,7 @@ onBeforeUnmount(() => {
                         </article>
 
                         <article
-                            class="home-parallax-screen relative z-20 aspect-[254/548] w-full max-w-[260px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:right-0 md:top-[150px] md:h-[560px] md:w-[260px] md:max-w-none"
+                            class="home-parallax-screen relative z-20 aspect-[254/548] w-full max-w-[300px] overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-b from-blue-500 to-blue-700 p-0 shadow-2xl shadow-blue-900/35 will-change-transform md:absolute md:right-0 md:top-[130px] md:h-[660px] md:w-[300px] md:max-w-none"
                             data-rellax-speed="6"
                         >
                             <img
@@ -190,7 +194,9 @@ onBeforeUnmount(() => {
                     </div>
                 </section>
 
-                <section id="features" class="mx-auto mt-12 w-full max-w-7xl px-6">
+                <HomeTrustedBySection />
+
+                <section id="features" class="mx-auto w-full max-w-7xl px-6 py-24">
                     <div class="mb-16 text-center" data-aos="fade-up">
                         <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">Best Features</h2>
                         <p class="text-lg text-gray-600">Powerful capabilities designed for your peace of mind</p>
@@ -223,7 +229,7 @@ onBeforeUnmount(() => {
                     </div>
                 </section>
 
-                <section id="security" class="mx-auto w-full max-w-7xl px-6 py-32">
+                <section id="security" class="mx-auto w-full max-w-7xl px-6 py-24">
                     <div class="mb-20 text-center" data-aos="fade-up">
                         <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">Security meets simplicity</h2>
                         <p class="text-lg text-gray-600">Everything you need to protect what matters most</p>
@@ -249,7 +255,9 @@ onBeforeUnmount(() => {
                     </div>
                 </section>
 
-                <section id="pricing" class="mx-auto w-full max-w-7xl px-6 pb-28">
+                <HomePricingSection />
+
+                <section id="get-started" class="mx-auto w-full max-w-7xl px-6 py-24">
                     <div
                         class="relative overflow-hidden rounded-3xl border border-outline-variant bg-gradient-to-br from-surface-container to-surface-container-high p-10 md:p-16"
                         data-aos="zoom-in-up"
