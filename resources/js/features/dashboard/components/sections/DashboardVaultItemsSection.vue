@@ -5,6 +5,7 @@ import {
     Clock,
     Copy,
     CreditCard,
+    EllipsisVertical,
     Eye,
     EyeOff,
     FileText,
@@ -12,7 +13,6 @@ import {
     Key,
     Search,
     Star,
-    Trash2,
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -38,7 +38,7 @@ const emit = defineEmits([
     'toggle-password-visibility',
     'copy-password',
     'toggle-favorite',
-    'delete-item',
+    'open-item-actions',
 ]);
 
 const unavailableWebsiteLogoIds = ref(new Set());
@@ -178,10 +178,10 @@ const markWebsiteLogoAsUnavailable = (itemId) => {
                         </button>
                         <button
                             class="rounded-lg p-2 transition-colors hover:bg-surface-container"
-                            title="Delete item"
-                            @click="emit('delete-item', pwd.id)"
+                            title="Service actions"
+                            @click="emit('open-item-actions', pwd)"
                         >
-                            <Trash2 class="h-5 w-5 text-on-surface-variant" />
+                            <EllipsisVertical class="h-5 w-5 text-on-surface-variant" />
                         </button>
                     </div>
                 </div>

@@ -85,19 +85,28 @@ export const useDashboardServices = () => {
         address: (item.address ?? '').trim(),
     });
 
+    const decryptServicePayloadRecord = async (record) => {
+        const payload = record?.payload;
+        const ciphertextBase64 = payload?.ciphertextBase64;
+        const ivBase64 = payload?.ivBase64;
+        if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
+            throw new Error('Service payload is invalid.');
+        }
+
+        const decryptedJson = await vaultSession.decryptPassword({ ciphertextBase64, ivBase64 });
+        const parsed = JSON.parse(decryptedJson);
+
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Service payload is invalid.');
+        }
+
+        return parsed;
+    };
+
     const buildUiItemFromRecord = async (record) => {
         try {
-            const payload = record?.payload;
             const itemType = toUiType(record.type ?? 'note');
-
-            const ciphertextBase64 = payload?.ciphertextBase64;
-            const ivBase64 = payload?.ivBase64;
-            if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
-                return null;
-            }
-
-            const decryptedJson = await vaultSession.decryptPassword({ ciphertextBase64, ivBase64 });
-            const item = JSON.parse(decryptedJson);
+            const item = await decryptServicePayloadRecord(record);
             const cardLastFour = String(item.cardNumber ?? '').replace(/\s+/g, '').slice(-4);
             const identityLabel = String(item.email ?? '').trim() || String(item.fullName ?? '').trim() || 'Identity';
 
@@ -171,6 +180,84 @@ export const useDashboardServices = () => {
         await vaultServiceApi.remove(String(id));
         serviceRecordsById.value.delete(String(id));
         passwords.value = passwords.value.filter((item) => String(item.id) !== String(id));
+    };
+
+    const getServiceForEdit = async (id) => {
+        await waitForUnlockedVault();
+
+        const serviceId = String(id);
+        const record = serviceRecordsById.value.get(serviceId);
+        if (!record) {
+            throw new Error('Service not found.');
+        }
+
+        const payload = await decryptServicePayloadRecord(record);
+
+        return {
+            id: serviceId,
+            type: toUiType(record.type ?? 'note'),
+            status: String(record.status ?? 'active'),
+            favorite: Boolean(record.favorite),
+            name: String(payload.name ?? '').trim(),
+            username: String(payload.username ?? '').trim(),
+            password: String(payload.password ?? ''),
+            url: String(payload.url ?? '').trim(),
+            cardholder: String(payload.cardholder ?? '').trim(),
+            cardNumber: String(payload.cardNumber ?? '').trim(),
+            expiry: String(payload.expiry ?? '').trim(),
+            cvc: String(payload.cvc ?? '').trim(),
+            note: String(payload.note ?? '').trim(),
+            requireMasterPassword: Boolean(payload.requireMasterPassword),
+            fullName: String(payload.fullName ?? '').trim(),
+            email: String(payload.email ?? '').trim(),
+            phone: String(payload.phone ?? '').trim(),
+            address: String(payload.address ?? '').trim(),
+        };
+    };
+
+    const updateService = async (id, item) => {
+        await waitForUnlockedVault();
+
+        const serviceId = String(id);
+        const currentRecord = serviceRecordsById.value.get(serviceId);
+        if (!currentRecord) {
+            throw new Error('Service not found.');
+        }
+
+        const plainPayload = normalizePayloadForEncryption(item);
+        const encryptedPayload = await CryptoEncryptor.encryptWithKey(
+            JSON.stringify(plainPayload),
+            vaultSession.getDek(),
+        );
+
+        const createdAt = typeof currentRecord?.payload?.createdAt === 'string'
+            && currentRecord.payload.createdAt.trim() !== ''
+            ? currentRecord.payload.createdAt
+            : new Date().toISOString();
+
+        const updatedRecord = await vaultServiceApi.update(serviceId, {
+            type: toApiType(item.type ?? toUiType(currentRecord.type ?? 'note')),
+            favorite: Boolean(item.favorite),
+            status: item.status === 'archived' ? 'archived' : 'active',
+            payload: {
+                ...encryptedPayload,
+                version: 1,
+                algorithm: 'libsodium.crypto_secretbox',
+                encoding: 'json',
+                schema: 1,
+                createdAt,
+            },
+        });
+
+        serviceRecordsById.value.set(String(updatedRecord.id), updatedRecord);
+        const nextUiItem = await buildUiItemFromRecord(updatedRecord);
+        if (nextUiItem !== null) {
+            passwords.value = passwords.value.map((entry) =>
+                String(entry.id) === String(nextUiItem.id) ? nextUiItem : entry,
+            );
+        }
+
+        return nextUiItem;
     };
 
     const toggleFavorite = async (item) => {
@@ -323,6 +410,8 @@ export const useDashboardServices = () => {
         loadServices,
         createService,
         deleteService,
+        getServiceForEdit,
+        updateService,
         toggleFavorite,
         togglePasswordVisibility,
         lookupShareRecipient,

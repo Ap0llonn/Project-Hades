@@ -13,6 +13,7 @@ import { openCardItemModal } from '../components/item-modals/cardItemModalForm';
 import { openIdentityItemModal } from '../components/item-modals/identityItemModalForm';
 import { openLoginItemModal } from '../components/item-modals/loginItemModalForm';
 import { openNoteItemModal } from '../components/item-modals/noteItemModalForm';
+import { openServiceItemActionsModal } from '../components/item-modals/serviceItemActionsModalForm';
 import { useModal } from '../../../shared/modal';
 
 const searchQuery = ref('');
@@ -39,6 +40,8 @@ const {
     loadServices,
     createService,
     deleteService,
+    getServiceForEdit,
+    updateService,
     toggleFavorite,
     togglePasswordVisibility,
     lookupShareRecipient,
@@ -236,6 +239,37 @@ const requestDeleteService = (id) => {
             await deleteService(id);
         },
     });
+};
+
+const openServiceActions = async (item) => {
+    if (!item) {
+        return;
+    }
+
+    if (item.isShared) {
+        requestDeleteService(item.id);
+        return;
+    }
+
+    try {
+        const editableItem = await getServiceForEdit(String(item.id));
+
+        openServiceItemActionsModal(modal, editableItem, {
+            onSave: async (payload) => {
+                await updateService(payload.id, payload);
+            },
+            onDelete: async (payload) => {
+                await deleteService(payload.id);
+            },
+        });
+    } catch (error) {
+        modal.danger({
+            title: 'Unable to edit service',
+            message: error instanceof Error ? error.message : 'Unable to load this service.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+    }
 };
 
 const handleToggleFavorite = async (item) => {
@@ -463,7 +497,7 @@ regenerateGeneratedPassword();
                         @toggle-password-visibility="togglePasswordVisibility"
                         @copy-password="copyToClipboard"
                         @toggle-favorite="handleToggleFavorite"
-                        @delete-item="requestDeleteService"
+                        @open-item-actions="openServiceActions"
                     />
                 </div>
             </div>
