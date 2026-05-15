@@ -21,16 +21,35 @@ const allItemsVaultFilter = ref('all-vaults');
 const allItemsTypeFilter = ref('all-items');
 const allItemsFolderFilter = ref('no-folder');
 const allItemsLifecycleFilter = ref('active');
+const generatorLength = ref(20);
+const generatedPassword = ref('');
+const selectedShareServiceId = ref('');
+const shareRecipientEmail = ref('');
+const shareStatus = ref('');
+const shareBusy = ref(false);
+const incomingShares = ref([]);
+const incomingSharesBusy = ref(false);
+const sharedVaultItems = ref([]);
 const modal = useModal();
 
 const {
     passwords,
     visiblePasswords,
+    passwordStrength,
     loadServices,
     createService,
     deleteService,
+    getServiceForEdit,
+    updateService,
     toggleFavorite,
     togglePasswordVisibility,
+    lookupShareRecipient,
+    createShareEnvelope,
+    shareService,
+    loadIncomingShares,
+    revokeShare,
+    decryptIncomingShareEnvelope,
+    decryptSharedServiceData,
 } = useDashboardServices();
 
 const vaultCategories = ['all', 'favorites', 'login', 'card', 'note', 'identity'];
@@ -44,7 +63,7 @@ const copyToClipboard = async (text) => {
 };
 
 const filteredPasswords = computed(() =>
-    passwords.value.filter((pwd) => {
+    allVaultItems.value.filter((pwd) => {
         const query = searchQuery.value.toLowerCase();
         const matchesSearch =
             pwd.name.toLowerCase().includes(query) ||
@@ -67,11 +86,11 @@ const filteredPasswords = computed(() =>
     }),
 );
 
-const favoriteCount = computed(() => passwords.value.filter((p) => p.favorite).length);
-const loginCount = computed(() => passwords.value.filter((p) => p.category === 'login').length);
-const cardCount = computed(() => passwords.value.filter((p) => p.category === 'card').length);
-const noteCount = computed(() => passwords.value.filter((p) => p.category === 'note').length);
-const weakPasswords = computed(() => passwords.value.filter((p) => p.strength === 'weak').length);
+const favoriteCount = computed(() => allVaultItems.value.filter((p) => p.favorite).length);
+const loginCount = computed(() => allVaultItems.value.filter((p) => p.category === 'login').length);
+const cardCount = computed(() => allVaultItems.value.filter((p) => p.category === 'card').length);
+const noteCount = computed(() => allVaultItems.value.filter((p) => p.category === 'note').length);
+const weakPasswords = computed(() => allVaultItems.value.filter((p) => p.strength === 'weak').length);
 const securityScore = 78;
 const reusedPasswords = 2;
 const breachedPasswords = 0;
@@ -81,6 +100,14 @@ const isSecurityCenter = computed(() => selectedCategory.value === 'security-cen
 const isPasswordGenerator = computed(() => selectedCategory.value === 'password-generator');
 const isImportExport = computed(() => selectedCategory.value === 'import-export');
 const isPasswordSharing = computed(() => selectedCategory.value === 'password-sharing');
+const allVaultItems = computed(() => [...passwords.value, ...sharedVaultItems.value]);
+
+const shareableItems = computed(() =>
+    passwords.value.map((item) => ({
+        id: String(item.id),
+        name: String(item.name ?? 'Secure item'),
+    })),
+);
 
 const categoryTitle = computed(() => {
     if (selectedCategory.value === 'all') {
@@ -140,9 +167,51 @@ const openAddItemModal = (type) => {
     openNoteItemModal(modal, saveNewItem);
 };
 
+const apiTypeToCategory = (type) => {
+    const normalized = String(type ?? '').trim();
+    if (normalized === 'credit_card') {
+        return 'card';
+    }
+    if (normalized === 'identity' || normalized === 'note' || normalized === 'login') {
+        return normalized;
+    }
+
+    return 'note';
+};
+
+const formatLastUsed = (isoDate) => {
+    const value = String(isoDate ?? '').trim();
+    if (!value) {
+        return 'just now';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return 'just now';
+    }
+
+    return parsed.toLocaleString();
+};
+
 const requestDeleteService = (id) => {
-    const targetItem = passwords.value.find((item) => String(item.id) === String(id));
+    const targetItem = allVaultItems.value.find((item) => String(item.id) === String(id));
     const itemName = (targetItem?.name ?? 'this item').trim() || 'this item';
+
+    if (targetItem?.isShared) {
+        modal.danger({
+            title: 'Remove shared item',
+            message: `Remove "${itemName}" from your shared items list?`,
+            confirmLabel: 'Remove',
+            cancelLabel: 'Cancel',
+            onConfirm: async () => {
+                await removeIncomingShare({
+                    serviceId: targetItem.serviceId,
+                    id: targetItem.shareId,
+                });
+            },
+        });
+        return;
+    }
 
     modal.danger({
         title: 'Delete service',
@@ -155,10 +224,183 @@ const requestDeleteService = (id) => {
     });
 };
 
+const openServiceActions = async (item) => {
+    if (!item) {
+        return;
+    }
+
+    if (item.isShared) {
+        requestDeleteService(item.id);
+        return;
+    }
+
+    try {
+        const editableItem = await getServiceForEdit(String(item.id));
+
+        openServiceItemActionsModal(modal, editableItem, {
+            onSave: async (payload) => {
+                await updateService(payload.id, payload);
+            },
+            onDelete: async (payload) => {
+                await deleteService(payload.id);
+            },
+        });
+    } catch (error) {
+        modal.danger({
+            title: 'Unable to edit service',
+            message: error instanceof Error ? error.message : 'Unable to load this service.',
+            confirmLabel: 'Close',
+            cancelLabel: null,
+        });
+    }
+};
+
+const handleToggleFavorite = async (item) => {
+    if (item?.isShared) {
+        shareStatus.value = 'Favorites are only available for your own items.';
+        return;
+    }
+
+    await toggleFavorite(item);
+};
+
+const buildIncomingShareView = async (share) => {
+    const sharedBy = String(share?.shared_by?.email ?? 'Unknown sender');
+    const serviceId = String(share?.service_id ?? '');
+    const shareId = String(share?.id ?? `${serviceId}:${sharedBy}`);
+    const serviceType = apiTypeToCategory(share?.service?.type);
+    const status = String(share?.service?.status ?? 'active');
+    const lastUsed = formatLastUsed(share?.service?.updated_at ?? share?.updated_at);
+    const servicePayload = share?.service?.payload ?? null;
+    const fallbackName = String(share?.service?.type ?? 'shared item');
+
+    let name = fallbackName;
+    let username = '';
+    let password = serviceType === 'login' ? '' : '***';
+    let url = '';
+    let note = '';
+    let error = '';
+
+    try {
+        const sharedDekBase64 = await decryptIncomingShareEnvelope(share?.key_envelope ?? null);
+        if (!sharedDekBase64) {
+            error = 'Unsupported shared key envelope.';
+        } else {
+            const decrypted = await decryptSharedServiceData(servicePayload, sharedDekBase64);
+            if (decrypted && typeof decrypted === 'object') {
+                name = String(decrypted.name ?? fallbackName);
+                if (serviceType === 'login') {
+                    username = String(decrypted.username ?? '').trim();
+                    password = String(decrypted.password ?? '');
+                    url = String(decrypted.url ?? '').trim();
+                } else if (serviceType === 'card') {
+                    const cardLastFour = String(decrypted.cardNumber ?? '').replace(/\s+/g, '').slice(-4);
+                    username = `**** **** **** ${cardLastFour || '0000'}`;
+                } else if (serviceType === 'identity') {
+                    username = String(decrypted.email ?? decrypted.fullName ?? '').trim() || 'Identity';
+                } else {
+                    username = 'Secure note';
+                }
+                note = String(decrypted.note ?? '').trim();
+            } else {
+                error = 'Unable to decrypt shared item payload.';
+            }
+        }
+    } catch {
+        error = 'Unable to decrypt shared item payload.';
+    }
+
+    return {
+        id: `shared:${shareId}`,
+        shareId,
+        serviceId,
+        name,
+        username: username || 'No username',
+        password,
+        url,
+        note,
+        category: serviceType,
+        favorite: false,
+        requiresMasterPasswordForNote: false,
+        lastUsed,
+        strength: serviceType === 'login' ? passwordStrength(password) : 'strong',
+        status,
+        isShared: true,
+        sharedBy,
+        error,
+    };
+};
+
+const refreshIncomingShares = async () => {
+    incomingSharesBusy.value = true;
+    try {
+        const shares = await loadIncomingShares();
+        const mapped = await Promise.all(shares.map((share) => buildIncomingShareView(share)));
+        incomingShares.value = mapped;
+        sharedVaultItems.value = mapped.filter((item) => !item.error);
+    } catch (error) {
+        incomingShares.value = [];
+        sharedVaultItems.value = [];
+        shareStatus.value = error instanceof Error ? error.message : 'Failed to load incoming shares.';
+    } finally {
+        incomingSharesBusy.value = false;
+    }
+};
+
+const submitShare = async () => {
+    shareStatus.value = '';
+
+    const serviceId = String(selectedShareServiceId.value ?? '').trim();
+    const recipientEmail = String(shareRecipientEmail.value ?? '').trim();
+
+    if (!serviceId || !recipientEmail) {
+        shareStatus.value = 'Select an item and enter recipient email.';
+        return;
+    }
+
+    shareBusy.value = true;
+
+    try {
+        const recipient = await lookupShareRecipient(recipientEmail);
+        const envelope = await createShareEnvelope(recipient.public_key);
+        await shareService(serviceId, recipient.email, envelope);
+        shareStatus.value = `Shared with ${recipient.email}.`;
+        shareRecipientEmail.value = '';
+        await refreshIncomingShares();
+    } catch (error) {
+        shareStatus.value = error instanceof Error ? `Share failed: ${error.message}` : 'Share failed.';
+    } finally {
+        shareBusy.value = false;
+    }
+};
+
+const removeIncomingShare = async (share) => {
+    const serviceId = String(share?.serviceId ?? '').trim();
+    const shareId = String(share?.shareId ?? share?.id ?? '').trim();
+
+    if (!serviceId || !shareId) {
+        return;
+    }
+
+    try {
+        await revokeShare(serviceId, shareId);
+        await refreshIncomingShares();
+    } catch (error) {
+        shareStatus.value = error instanceof Error ? error.message : 'Unable to remove incoming share.';
+    }
+};
+
 onMounted(() => {
-    loadServices().catch((error) => {
-        console.error('Unable to load encrypted services.', error);
-    });
+    loadServices()
+        .then(async () => {
+            if (!selectedShareServiceId.value && shareableItems.value.length > 0) {
+                selectedShareServiceId.value = shareableItems.value[0].id;
+            }
+            await refreshIncomingShares();
+        })
+        .catch((error) => {
+            console.error('Unable to load encrypted services.', error);
+        });
 });
 </script>
 
@@ -167,12 +409,6 @@ onMounted(() => {
 
     <DashboardLayout
         :selected-category="selectedCategory"
-        :total-count="passwords.length"
-        :favorite-count="favoriteCount"
-        :login-count="loginCount"
-        :card-count="cardCount"
-        :note-count="noteCount"
-        :security-alert-count="securityAlertCount"
         @update:selected-category="selectedCategory = $event"
     >
         <DashboardHeaderSection
@@ -209,6 +445,23 @@ onMounted(() => {
                         :weak-passwords="weakPasswords"
                         :reused-passwords="reusedPasswords"
                         :breached-passwords="breachedPasswords"
+                        :generator-length="generatorLength"
+                        :generated-password="generatedPassword"
+                        :shareable-items="shareableItems"
+                        :selected-share-service-id="selectedShareServiceId"
+                        :share-recipient-email="shareRecipientEmail"
+                        :share-busy="shareBusy"
+                        :share-status="shareStatus"
+                        :incoming-shares="incomingShares"
+                        :incoming-shares-busy="incomingSharesBusy"
+                        @update:generator-length="generatorLength = $event"
+                        @regenerate-password="regenerateGeneratedPassword"
+                        @copy-generated-password="copyToClipboard(generatedPassword)"
+                        @update:selected-share-service-id="selectedShareServiceId = $event"
+                        @update:share-recipient-email="shareRecipientEmail = $event"
+                        @share-password="submitShare"
+                        @refresh-incoming-shares="refreshIncomingShares"
+                        @revoke-incoming-share="removeIncomingShare"
                     />
 
                     <DashboardQuickActionsSection
@@ -220,12 +473,12 @@ onMounted(() => {
                         v-if="isVaultCategory"
                         :category-title="categoryTitle"
                         :filtered-passwords="filteredPasswords"
-                        :passwords="passwords"
+                        :passwords="allVaultItems"
                         :visible-passwords="visiblePasswords"
                         @toggle-password-visibility="togglePasswordVisibility"
                         @copy-password="copyToClipboard"
-                        @toggle-favorite="toggleFavorite"
-                        @delete-item="requestDeleteService"
+                        @toggle-favorite="handleToggleFavorite"
+                        @open-item-actions="openServiceActions"
                     />
                 </div>
             </div>

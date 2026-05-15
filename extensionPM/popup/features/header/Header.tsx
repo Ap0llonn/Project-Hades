@@ -5,8 +5,8 @@ type HeaderProps = {
   isAuthenticated: boolean
   busy: "auth" | "extract" | "save" | null
   canSave: boolean
-  displayName: string
-  initials: string
+  userEmail: string
+  emailInitial: string
   onSave: () => void
 }
 
@@ -14,8 +14,8 @@ export const Header = ({
   isAuthenticated,
   busy,
   canSave,
-  displayName,
-  initials,
+  userEmail,
+  emailInitial,
   onSave
 }: HeaderProps) => (
   <header style={headerStyle}>
@@ -37,20 +37,44 @@ export const Header = ({
           Save
         </button>
         <div
-          title={displayName}
+          title={userEmail}
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            background: "#6d28d9",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 12,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
+            gap: 8,
+            border: "1px solid #c6d0e1",
+            borderRadius: 17,
+            padding: "4px 10px 4px 4px",
+            background: "#ffffff",
+            maxWidth: 180
           }}>
-          {initials}
+          <span
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 13,
+              background: "#6d28d9",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flex: "0 0 auto"
+            }}>
+            {emailInitial}
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#334155",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis"
+            }}>
+            {userEmail}
+          </span>
         </div>
       </div>
     ) : null}

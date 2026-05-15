@@ -15,8 +15,8 @@ function IndexPopup() {
         isAuthenticated={view.isAuthenticated}
         busy={busy}
         canSave={view.canSave}
-        displayName={view.displayName}
-        initials={view.initials}
+        userEmail={view.userEmail}
+        emailInitial={view.emailInitial}
         onSave={() => void actions.saveService()}
       />
 

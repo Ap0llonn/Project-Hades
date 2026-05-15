@@ -1,6 +1,6 @@
 <script setup>
 import {computed, ref, watch} from 'vue';
-import {router, usePage} from '@inertiajs/vue3';
+import {router} from '@inertiajs/vue3';
 import {route} from 'ziggy-js';
 import {base64URLStringToBuffer, bufferToBase64URLString} from '@simplewebauthn/browser';
 import {Shield} from 'lucide-vue-next';
@@ -9,7 +9,6 @@ import {CryptoDecryptor, CryptoEncryptor} from '../../../../../../shared/utils';
 import {dekService} from '../../../../../../shared/services/dekService';
 
 const modal = useModal();
-const page = usePage();
 
 const settingProps = defineProps({
     security: {
@@ -21,12 +20,16 @@ const settingProps = defineProps({
             passkeys: [],
         }),
     },
+    forcePasskeyPrompt: {
+        type: Object,
+        default: null,
+    },
 });
 
 const passkeys = ref([]);
 const passkeySupported = ref(typeof window.browserSupportsWebAuthn === 'function' && window.browserSupportsWebAuthn());
 const hasPasskeys = computed(() => passkeys.value.length > 0);
-const autoPromptTriggered = ref(false);
+const autoPromptTriggerKey = ref('');
 
 watch(
     () => settingProps.security,
@@ -263,7 +266,9 @@ const createPasskey = async (name, masterPassword) => {
     });
 };
 
-const openPasskeyRegistrationModal = () => {
+const openPasskeyRegistrationModal = (forcedMode) => {
+    const forced = forcedMode === true;
+
     if (!passkeySupported.value) {
         modal.danger({
             title: 'Passkeys unavailable',
@@ -275,10 +280,13 @@ const openPasskeyRegistrationModal = () => {
     }
 
     modal.form({
-        title: 'Register passkey',
-        message: 'Save a passkey to sign in quickly without typing your master password.',
+        title: forced ? 'OAuth Linking Requires Passkey Setup' : 'Register passkey',
+        message: forced
+            ? 'You linked an OAuth account (Google or Apple). To secure your vault key wrapper, passkey setup is required now before continuing.'
+            : 'Save a passkey to sign in quickly without typing your master password.',
         confirmLabel: 'Register',
-        cancelLabel: 'Cancel',
+        cancelLabel: forced ? null : 'Cancel',
+        disableBackdropClose: forced,
         fields: [
             {
                 name: 'passkeyName',
@@ -292,7 +300,7 @@ const openPasskeyRegistrationModal = () => {
                 type: 'password',
                 autocomplete: 'current-password',
                 placeholder: 'Enter your master password',
-                required: false,
+                required: forced,
             },
         ],
         onSubmit: async (values) => {
@@ -307,21 +315,43 @@ const openPasskeyRegistrationModal = () => {
                 confirmLabel: 'Close',
                 cancelLabel: null,
             });
+
+            if (forced) {
+                router.reload({
+                    preserveState: false,
+                    preserveScroll: true,
+                });
+            }
         },
     });
 };
 
+const openStandardPasskeyRegistrationModal = () => {
+    openPasskeyRegistrationModal(false);
+};
+
+const openEnforcedPasskeyRegistrationModal = () => {
+    openPasskeyRegistrationModal(true);
+};
+
 watch(
-    () => page.props?.security?.oauth_passkey_prompt,
+    () => settingProps.forcePasskeyPrompt,
     (value) => {
-        if (autoPromptTriggered.value || !value || !passkeySupported.value) {
+        if (!value || hasPasskeys.value) {
             return;
         }
 
-        autoPromptTriggered.value = true;
-        openPasskeyRegistrationModal();
+        const provider = String(value?.provider ?? '');
+        const startedAt = String(value?.started_at ?? '');
+        const triggerKey = `${provider}:${startedAt}`;
+        if (triggerKey === autoPromptTriggerKey.value) {
+            return;
+        }
+
+        autoPromptTriggerKey.value = triggerKey;
+        openEnforcedPasskeyRegistrationModal();
     },
-    { immediate: true },
+    { immediate: true, deep: true },
 );
 
 const removePasskey = (passkeyId) => {
@@ -368,7 +398,7 @@ const removePasskey = (passkeyId) => {
                     ? 'border-primary text-primary hover:bg-primary hover:text-on-primary'
                     : 'border-outline-variant text-on-surface-variant cursor-not-allowed'"
                 :disabled="!passkeySupported"
-                @click="openPasskeyRegistrationModal"
+                @click="openStandardPasskeyRegistrationModal"
             >
                 Register
             </button>

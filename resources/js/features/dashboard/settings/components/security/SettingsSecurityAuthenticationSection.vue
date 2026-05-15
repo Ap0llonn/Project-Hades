@@ -14,6 +14,10 @@ const settingProps = defineProps({
             passkeys: [],
         }),
     },
+    forcePasskeyPrompt: {
+        type: Object,
+        default: null,
+    },
 });
 </script>
 
@@ -27,9 +31,11 @@ const settingProps = defineProps({
         <div class="mt-4 divide-y divide-outline-variant border-y border-outline-variant">
             <SettingsSecurityMasterPasswordMethod />
             <SettingsSecurityTwoFactorMethod :security="settingProps.security" />
-            <SettingsSecurityPasskeyMethod :security="settingProps.security" />
+            <SettingsSecurityPasskeyMethod
+                :security="settingProps.security"
+                :force-passkey-prompt="settingProps.forcePasskeyPrompt"
+            />
             <SettingsSecurityBiometricMethod />
         </div>
     </section>
 </template>
-

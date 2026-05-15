@@ -114,6 +114,43 @@ export class CryptoDecryptor {
 
         return bytesToUtf8(plainBytes);
     }
+
+    static async decryptWithSenderPublicKey(
+        payload: { ciphertextBase64: string; ivBase64: string },
+        senderPublicKey: BinarySource,
+        recipientPrivateKey: BinarySource,
+    ): Promise<string> {
+        if (!payload?.ciphertextBase64 || !payload?.ivBase64) {
+            throw new Error('Payload must include ciphertextBase64 and ivBase64.');
+        }
+
+        const sodiumApi = await getSodium();
+        const cipherBytes = normalizeBytes(payload.ciphertextBase64, 'ciphertext');
+        const nonceBytes = normalizeBytes(payload.ivBase64, 'iv');
+        const senderPublicKeyBytes = normalizeBytes(senderPublicKey, 'senderPublicKey');
+        const recipientPrivateKeyBytes = normalizeBytes(recipientPrivateKey, 'recipientPrivateKey');
+
+        if (nonceBytes.length !== sodiumApi.crypto_box_NONCEBYTES) {
+            throw new Error(`iv must be ${sodiumApi.crypto_box_NONCEBYTES} bytes.`);
+        }
+
+        if (senderPublicKeyBytes.length !== sodiumApi.crypto_box_PUBLICKEYBYTES) {
+            throw new Error(`senderPublicKey must be ${sodiumApi.crypto_box_PUBLICKEYBYTES} bytes.`);
+        }
+
+        if (recipientPrivateKeyBytes.length !== sodiumApi.crypto_box_SECRETKEYBYTES) {
+            throw new Error(`recipientPrivateKey must be ${sodiumApi.crypto_box_SECRETKEYBYTES} bytes.`);
+        }
+
+        const plainBytes = sodiumApi.crypto_box_open_easy(
+            cipherBytes,
+            nonceBytes,
+            senderPublicKeyBytes,
+            recipientPrivateKeyBytes,
+        );
+
+        return bytesToUtf8(plainBytes);
+    }
 }
 
 export default CryptoDecryptor;

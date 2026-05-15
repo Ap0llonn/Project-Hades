@@ -19,13 +19,13 @@ final class CreateServiceRequest extends FormRequest
             'favorite' => ['sometimes', 'boolean'],
             'status' => ['sometimes', 'string', 'in:active,archived'],
             'payload' => ['required', 'array'],
-            'payload.ciphertextBase64' => ['required', 'string'],
-            'payload.ivBase64' => ['required', 'string'],
-            'payload.version' => ['sometimes', 'integer'],
-            'payload.algorithm' => ['sometimes', 'string'],
-            'payload.encoding' => ['sometimes', 'string'],
-            'payload.schema' => ['sometimes', 'integer'],
-            'payload.createdAt' => ['sometimes', 'string'],
+            'payload.ciphertextBase64' => ['required', 'string', 'regex:/^[A-Za-z0-9+\/]+={0,2}$/'],
+            'payload.ivBase64' => ['required', 'string', 'regex:/^[A-Za-z0-9+\/]+={0,2}$/'],
+            'payload.version' => ['required', 'integer', 'min:1'],
+            'payload.algorithm' => ['required', 'string', 'in:libsodium.crypto_secretbox'],
+            'payload.encoding' => ['required', 'string', 'in:json'],
+            'payload.schema' => ['required', 'integer', 'in:1'],
+            'payload.createdAt' => ['required', 'date'],
         ];
     }
 
