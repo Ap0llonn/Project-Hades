@@ -2,6 +2,7 @@
 
 use App\Features\Dashboard\DashboardController;
 use App\Features\Dashboard\Settings\SettingsController;
+use App\Support\VaultDomains;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -13,7 +14,7 @@ Route::get('/privacy-policy', function () {
     return Inertia::render('shared/pages/PrivacyPolicyPage');
 })->name('privacy');
 
-Route::domain('vaultguardian.ca')
+Route::domain(VaultDomains::marketingHost())
     ->middleware('marketing.domain')
     ->group(function () {
         require base_path('routes/Auth/StartAccount/startAccount.php');
@@ -27,7 +28,7 @@ Route::domain('vaultguardian.ca')
         })->name('home');
     });
 
-Route::domain('vault.vaultguardian.ca')
+Route::domain(VaultDomains::vaultHost())
     ->middleware('vault.domain')
     ->group(function () {
         require base_path('routes/Auth/email.php');

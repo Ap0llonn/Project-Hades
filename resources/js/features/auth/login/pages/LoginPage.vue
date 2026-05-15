@@ -1,6 +1,6 @@
 <script setup>
 import {Head, useForm, usePage} from '@inertiajs/vue3';
-import { Apple, Chrome, Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
+import { Chrome, Eye, EyeOff, Lock, Mail, Shield } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { route } from 'ziggy-js';
 import AuthLayout from '../../../../shared/layouts/AuthLayout.vue';
@@ -206,7 +206,7 @@ function startOAuth(provider) {
                         {{ loginRequest.processing ? 'Signing In...' : 'Sign In' }}
                     </button>
 
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <button
                             type="button"
                             :disabled="!passkeySupported || passkeyProcessing"
@@ -230,15 +230,6 @@ function startOAuth(provider) {
                             Google
                         </button>
 
-                        <button
-                            type="button"
-                            class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50"
-                            style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
-                            @click="startOAuth('apple')"
-                        >
-                            <Apple class="h-5 w-5" />
-                            Apple
-                        </button>
                     </div>
 
                     <p
