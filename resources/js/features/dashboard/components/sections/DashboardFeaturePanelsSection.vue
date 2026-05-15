@@ -1,6 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { Check } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     isSecurityCenter: { type: Boolean, required: true },
@@ -39,6 +38,24 @@ const useLower = ref(true);
 const useNumbers = ref(true);
 const useSpecial = ref(true);
 const localGeneratedPassword = ref('');
+
+const selectedGeneratorOptions = computed(() => {
+    const selected = [];
+    if (useUpper.value) {
+        selected.push('Uppercase');
+    }
+    if (useLower.value) {
+        selected.push('Lowercase');
+    }
+    if (useNumbers.value) {
+        selected.push('Numbers');
+    }
+    if (useSpecial.value) {
+        selected.push('Special');
+    }
+
+    return selected;
+});
 
 const buildCharset = () => {
     let charset = '';
@@ -187,25 +204,30 @@ generate();
                 >
 
                 <!-- Options -->
-                <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <button
-                        v-for="opt in [
-                            { label: 'Uppercase', model: useUpper },
-                            { label: 'Lowercase', model: useLower },
-                            { label: 'Numbers',   model: useNumbers },
-                            { label: 'Special',   model: useSpecial },
-                        ]"
-                        :key="opt.label"
-                        type="button"
-                        class="flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors"
-                        :class="opt.model.value
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container'"
-                        @click="opt.model.value = !opt.model.value"
-                    >
-                        <Check v-if="opt.model.value" class="h-3 w-3 shrink-0" />
-                        {{ opt.label }}
-                    </button>
+                <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label class="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface">
+                        <input v-model="useUpper" type="checkbox" class="h-4 w-4 accent-primary">
+                        <span>Uppercase (A-Z)</span>
+                    </label>
+                    <label class="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface">
+                        <input v-model="useLower" type="checkbox" class="h-4 w-4 accent-primary">
+                        <span>Lowercase (a-z)</span>
+                    </label>
+                    <label class="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface">
+                        <input v-model="useNumbers" type="checkbox" class="h-4 w-4 accent-primary">
+                        <span>Numbers (0-9)</span>
+                    </label>
+                    <label class="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface">
+                        <input v-model="useSpecial" type="checkbox" class="h-4 w-4 accent-primary">
+                        <span>Special (!@#$...)</span>
+                    </label>
+                </div>
+
+                <div class="mt-3 rounded-lg border border-outline-variant bg-surface px-3 py-2">
+                    <p class="text-xs font-medium text-on-surface-variant">Selected options</p>
+                    <p class="mt-1 text-sm text-on-surface">
+                        {{ selectedGeneratorOptions.length > 0 ? selectedGeneratorOptions.join(', ') : 'None (fallback to lowercase)' }}
+                    </p>
                 </div>
 
                 <!-- Result -->

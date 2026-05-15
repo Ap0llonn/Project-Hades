@@ -95,11 +95,56 @@ const favoriteCount = computed(() => allVaultItems.value.filter((p) => p.favorit
 const loginCount = computed(() => allVaultItems.value.filter((p) => p.category === 'login').length);
 const cardCount = computed(() => allVaultItems.value.filter((p) => p.category === 'card').length);
 const noteCount = computed(() => allVaultItems.value.filter((p) => p.category === 'note').length);
-const weakPasswords = computed(() => allVaultItems.value.filter((p) => p.strength === 'weak').length);
-const securityScore = 78;
-const reusedPasswords = 2;
-const breachedPasswords = 0;
-const securityAlertCount = computed(() => weakPasswords.value + reusedPasswords + breachedPasswords);
+const loginItemsWithPassword = computed(() =>
+    allVaultItems.value.filter((item) =>
+        item.category === 'login'
+        && typeof item.password === 'string'
+        && item.password.trim() !== '',
+    ),
+);
+
+const weakPasswords = computed(() => loginItemsWithPassword.value.filter((p) => p.strength === 'weak').length);
+
+const reusedPasswords = computed(() => {
+    const countsByPassword = new Map();
+    loginItemsWithPassword.value.forEach((item) => {
+        const key = item.password.trim();
+        countsByPassword.set(key, (countsByPassword.get(key) ?? 0) + 1);
+    });
+
+    return Array.from(countsByPassword.values())
+        .filter((count) => count > 1)
+        .reduce((total, count) => total + count, 0);
+});
+
+const breachedPasswords = computed(() =>
+    loginItemsWithPassword.value.filter((item) => {
+        if (item.breached === true) {
+            return true;
+        }
+
+        return String(item.status ?? '').toLowerCase() === 'breached';
+    }).length,
+);
+
+const securityScore = computed(() => {
+    const totalLogins = loginItemsWithPassword.value.length;
+    if (totalLogins === 0) {
+        return 100;
+    }
+
+    const weakRatio = weakPasswords.value / totalLogins;
+    const reusedRatio = Math.min(1, reusedPasswords.value / totalLogins);
+    const breachedRatio = Math.min(1, breachedPasswords.value / totalLogins);
+    const mediumRatio = loginItemsWithPassword.value.filter((item) => item.strength === 'medium').length / totalLogins;
+
+    const penalty = (weakRatio * 45) + (reusedRatio * 30) + (breachedRatio * 25) + (mediumRatio * 10);
+    const score = Math.round(100 - penalty);
+
+    return Math.max(0, Math.min(100, score));
+});
+
+const securityAlertCount = computed(() => weakPasswords.value + reusedPasswords.value + breachedPasswords.value);
 const isVaultCategory = computed(() => vaultCategories.includes(selectedCategory.value));
 const isSecurityCenter = computed(() => selectedCategory.value === 'security-center');
 const isPasswordGenerator = computed(() => selectedCategory.value === 'password-generator');
