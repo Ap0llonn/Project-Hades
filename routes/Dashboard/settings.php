@@ -1,5 +1,6 @@
 <?php
 
+use App\Features\Dashboard\Settings\ChangePassword\ChangePasswordController;
 use App\Features\Dashboard\Settings\Profile\Update\UpdateProfileController;
 use App\Features\Dashboard\Settings\Sessions\Read\ListActiveSessionsController;
 use App\Features\Dashboard\Settings\Sessions\Revoke\RevokeSessionController;
