@@ -1,6 +1,6 @@
 import { saveService } from "~lib/api"
 import { ensureDefaultSettings, getSettings, setSettings } from "~lib/storage"
-import { getSessionState, lockSession, logout, requireSensitiveAction, startAuthentication, verifySession } from "~lib/auth"
+import { directLogin, getSessionState, lockSession, logout, requireSensitiveAction, startAuthentication, verifySession } from "~lib/auth"
 import type {
   ActiveTabInfo,
   BackgroundRequest,
@@ -80,6 +80,8 @@ const handleRequest = (request: BackgroundRequest) => {
       return toResponse(lockSession("manual"))
     case "auth:start":
       return toResponse(startAuthentication(request.forcePrompt ?? false))
+    case "auth:direct-login":
+      return toResponse(directLogin(request.email, request.password))
     case "auth:logout":
       return toResponse(logout())
     case "page:get-active-tab":

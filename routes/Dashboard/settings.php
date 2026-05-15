@@ -9,4 +9,5 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/settings/sessions', ListActiveSessionsController::class)->name('settings.sessions.read');
     Route::put('/settings/profile', UpdateProfileController::class)->name('settings.profile.update');
     Route::delete('/settings/sessions/{sessionId}', RevokeSessionController::class)->name('settings.sessions.revoke');
+    Route::put('/settings/password', ChangePasswordController::class)->name('settings.password.change');
 });

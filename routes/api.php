@@ -1,5 +1,6 @@
 <?php
 
+use App\Features\ExtensionAuth\DirectLogin\DirectLoginController;
 use App\Features\ExtensionAuth\ExchangeTokenController;
 use App\Features\ExtensionAuth\MeController;
 use App\Features\ExtensionAuth\RefreshTokenController;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::domain(VaultDomains::vaultHost())
     ->middleware(['vault.domain', 'throttle:extension-auth-token'])
     ->group(function (): void {
+        Route::post('/extension/auth/login', DirectLoginController::class)->name('api.extension.auth.direct-login');
         Route::post('/extension/auth/token', ExchangeTokenController::class)->name('api.extension.auth.token');
         Route::post('/extension/auth/refresh', RefreshTokenController::class)->name('api.extension.auth.refresh');
 
