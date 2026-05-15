@@ -1,13 +1,13 @@
 <script setup>
 const trustedBrands = [
-    { name: 'Google', logo: '/images/trusted/google.svg' },
-    { name: 'Microsoft', logo: '/images/trusted/microsoft.svg' },
-    { name: 'Amazon', logo: '/images/trusted/amazon.svg' },
-    { name: 'Apple', logo: '/images/trusted/apple.svg' },
-    { name: 'Netflix', logo: '/images/trusted/netflix.svg' },
-    { name: 'Spotify', logo: '/images/trusted/spotify.svg' },
-    { name: 'PayPal', logo: '/images/trusted/paypal.svg' },
     { name: 'Adobe', logo: '/images/trusted/adobe.svg' },
+    { name: 'Amazon', logo: '/images/trusted/amazon.svg' },
+    { name: 'Google', logo: '/images/trusted/google.svg' },
+    { name: 'Meta', logo: '/images/trusted/meta.svg' },
+    { name: 'Microsoft', logo: '/images/trusted/microsoft.svg' },
+    { name: 'Netflix', logo: '/images/trusted/netflix.svg' },
+    { name: 'PayPal', logo: '/images/trusted/paypal.svg' },
+    { name: 'Spotify', logo: '/images/trusted/spotify.svg' },
 ];
 
 const marqueeBrands = [...trustedBrands, ...trustedBrands];
@@ -30,7 +30,7 @@ const marqueeBrands = [...trustedBrands, ...trustedBrands];
                     <img
                         :src="brand.logo"
                         :alt="`${brand.name} logo`"
-                        class="max-h-10 w-auto max-w-full object-contain opacity-60 grayscale saturate-0 transition-all duration-300 hover:opacity-100 hover:grayscale-0 hover:saturate-100"
+                        class="max-h-10 w-auto max-w-full object-contain opacity-60 grayscale saturate-0 transition-all duration-300 hover:opacity-100 hover:grayscale-0 hover:saturate-100 dark:opacity-70 dark:grayscale-0 dark:saturate-0 dark:brightness-0 dark:invert dark:hover:opacity-100 dark:hover:brightness-0 dark:hover:invert"
                         loading="lazy"
                     >
                 </div>
