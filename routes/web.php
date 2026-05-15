@@ -13,7 +13,7 @@ Route::get('/privacy-policy', function () {
     return Inertia::render('shared/pages/PrivacyPolicyPage');
 })->name('privacy');
 
-Route::domain('vaultguardian.test')
+Route::domain('vaultguardian.ca')
     ->middleware('marketing.domain')
     ->group(function () {
         require base_path('routes/Auth/StartAccount/startAccount.php');
@@ -27,7 +27,7 @@ Route::domain('vaultguardian.test')
         })->name('home');
     });
 
-Route::domain('vault.vaultguardian.test')
+Route::domain('vault.vaultguardian.ca')
     ->middleware('vault.domain')
     ->group(function () {
         require base_path('routes/Auth/email.php');

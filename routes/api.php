@@ -7,7 +7,7 @@ use App\Features\ExtensionAuth\RevokeController;
 use App\Features\Extension\Service\Create\CreateExtensionServiceController;
 use Illuminate\Support\Facades\Route;
 
-Route::domain('vault.vaultguardian.test')
+Route::domain('vault.vaultguardian.ca')
     ->middleware(['vault.domain', 'throttle:extension-auth-token'])
     ->group(function (): void {
         Route::post('/extension/auth/token', ExchangeTokenController::class)->name('api.extension.auth.token');
