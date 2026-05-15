@@ -46,9 +46,12 @@ Route::domain(VaultDomains::vaultHost())
         require base_path('routes/Extension/auth.php');
         require base_path('routes/Auth/mfa.php');
     });
-Route::get('/debug-google', function () {
-    return [
-        'env_client_id' => env('GOOGLE_CLIENT_ID'),
-        'config' => config('services.google'),
-    ];
+
+Route::get('/test-mail', function () {
+    Mail::raw('hello', function ($message) {
+        $message->to('samuelcourchesne2004@gmail.com')
+            ->subject('Test Mail');
+    });
+
+    return 'sent';
 });
