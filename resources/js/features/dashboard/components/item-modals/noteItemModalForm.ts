@@ -32,7 +32,7 @@ export const openNoteItemModal: ItemModalOpener = (modal, onSave) => {
             },
         ],
         onSubmit: (values) => {
-            onSave({
+            return onSave({
                 type: 'note',
                 name: values.name,
                 note: values.note,
@@ -41,3 +41,4 @@ export const openNoteItemModal: ItemModalOpener = (modal, onSave) => {
         },
     });
 };
+

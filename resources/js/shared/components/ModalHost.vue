@@ -17,7 +17,46 @@ const getConfirmButtonClasses = (type: ModalType): string => {
         return 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600';
     }
 
-    return 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100';
+    return 'bg-primary text-on-primary hover:bg-primary-container';
+};
+
+const getModalWidthClasses = (size: ModalSize): string => {
+    if (size === 'sm') {
+        return 'max-w-md';
+    }
+    if (size === 'lg') {
+        return 'max-w-2xl';
+    }
+
+    return 'max-w-xl';
+};
+
+const getModalHeightClasses = (size: ModalSize): string => {
+    if (size === 'lg') {
+        return 'h-[85vh]';
+    }
+
+    return '';
+};
+
+const getFormSections = (fields: ModalField[]): Array<{ title: string; fields: ModalField[] }> => {
+    const groups: Array<{ title: string; fields: ModalField[] }> = [];
+
+    fields.forEach((field) => {
+        const title = field.section ?? '';
+        const existingGroup = groups.find((group) => group.title === title);
+        if (existingGroup) {
+            existingGroup.fields.push(field);
+            return;
+        }
+
+        groups.push({
+            title,
+            fields: [field],
+        });
+    });
+
+    return groups;
 };
 
 const getModalWidthClasses = (size: ModalSize): string => {

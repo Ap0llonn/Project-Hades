@@ -112,6 +112,22 @@ select {
     font-family: inherit;
 }
 
+a[href],
+button:not(:disabled),
+input[type='button']:not(:disabled),
+input[type='submit']:not(:disabled),
+input[type='reset']:not(:disabled),
+[role='button'] {
+    cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+    cursor: not-allowed;
+}
+
 .dark .bg-white {
     background-color: #0f172a;
 }

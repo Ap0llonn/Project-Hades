@@ -11,4 +11,5 @@ export type {
     ArgonTypeName,
     DerivedClientKey,
     GeneratedClientKeyPair,
+    AsymmetricEncryptedPayload,
 } from './crypto';

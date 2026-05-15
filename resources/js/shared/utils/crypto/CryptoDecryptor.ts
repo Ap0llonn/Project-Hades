@@ -83,6 +83,37 @@ export class CryptoDecryptor {
     static async unwrapPrivateKey(wrapperPayload: EncryptedPayload, password: string): Promise<string> {
         return this.decryptWithPassword(wrapperPayload, password);
     }
+
+    static async decryptWithPrivateKey(
+        payload: { ciphertextBase64: string },
+        recipientPublicKey: BinarySource,
+        recipientPrivateKey: BinarySource,
+    ): Promise<string> {
+        if (!payload?.ciphertextBase64) {
+            throw new Error('Payload must include ciphertextBase64.');
+        }
+
+        const sodiumApi = await getSodium();
+        const cipherBytes = normalizeBytes(payload.ciphertextBase64, 'ciphertext');
+        const publicKeyBytes = normalizeBytes(recipientPublicKey, 'recipientPublicKey');
+        const privateKeyBytes = normalizeBytes(recipientPrivateKey, 'recipientPrivateKey');
+
+        if (publicKeyBytes.length !== sodiumApi.crypto_box_PUBLICKEYBYTES) {
+            throw new Error(`recipientPublicKey must be ${sodiumApi.crypto_box_PUBLICKEYBYTES} bytes.`);
+        }
+
+        if (privateKeyBytes.length !== sodiumApi.crypto_box_SECRETKEYBYTES) {
+            throw new Error(`recipientPrivateKey must be ${sodiumApi.crypto_box_SECRETKEYBYTES} bytes.`);
+        }
+
+        const plainBytes = sodiumApi.crypto_box_seal_open(
+            cipherBytes,
+            publicKeyBytes,
+            privateKeyBytes,
+        );
+
+        return bytesToUtf8(plainBytes);
+    }
 }
 
 export default CryptoDecryptor;
