@@ -22,31 +22,7 @@ defineProps({
     selectedCategory: {
         type: String,
         required: true,
-    },
-    totalCount: {
-        type: Number,
-        required: true,
-    },
-    favoriteCount: {
-        type: Number,
-        required: true,
-    },
-    loginCount: {
-        type: Number,
-        required: true,
-    },
-    cardCount: {
-        type: Number,
-        required: true,
-    },
-    noteCount: {
-        type: Number,
-        required: true,
-    },
-    securityAlertCount: {
-        type: Number,
-        required: true,
-    },
+    }
 });
 
 const emit = defineEmits(['update:selectedCategory']);

@@ -29,11 +29,13 @@ const shareStatus = ref('');
 const shareBusy = ref(false);
 const incomingShares = ref([]);
 const incomingSharesBusy = ref(false);
+const sharedVaultItems = ref([]);
 const modal = useModal();
 
 const {
     passwords,
     visiblePasswords,
+    passwordStrength,
     loadServices,
     createService,
     deleteService,
@@ -75,7 +77,7 @@ const copyToClipboard = async (text) => {
 };
 
 const filteredPasswords = computed(() =>
-    passwords.value.filter((pwd) => {
+    allVaultItems.value.filter((pwd) => {
         const query = searchQuery.value.toLowerCase();
         const matchesSearch =
             pwd.name.toLowerCase().includes(query) ||
@@ -98,11 +100,11 @@ const filteredPasswords = computed(() =>
     }),
 );
 
-const favoriteCount = computed(() => passwords.value.filter((p) => p.favorite).length);
-const loginCount = computed(() => passwords.value.filter((p) => p.category === 'login').length);
-const cardCount = computed(() => passwords.value.filter((p) => p.category === 'card').length);
-const noteCount = computed(() => passwords.value.filter((p) => p.category === 'note').length);
-const weakPasswords = computed(() => passwords.value.filter((p) => p.strength === 'weak').length);
+const favoriteCount = computed(() => allVaultItems.value.filter((p) => p.favorite).length);
+const loginCount = computed(() => allVaultItems.value.filter((p) => p.category === 'login').length);
+const cardCount = computed(() => allVaultItems.value.filter((p) => p.category === 'card').length);
+const noteCount = computed(() => allVaultItems.value.filter((p) => p.category === 'note').length);
+const weakPasswords = computed(() => allVaultItems.value.filter((p) => p.strength === 'weak').length);
 const securityScore = 78;
 const reusedPasswords = 2;
 const breachedPasswords = 0;
@@ -112,6 +114,7 @@ const isSecurityCenter = computed(() => selectedCategory.value === 'security-cen
 const isPasswordGenerator = computed(() => selectedCategory.value === 'password-generator');
 const isImportExport = computed(() => selectedCategory.value === 'import-export');
 const isPasswordSharing = computed(() => selectedCategory.value === 'password-sharing');
+const allVaultItems = computed(() => [...passwords.value, ...sharedVaultItems.value]);
 
 const shareableItems = computed(() =>
     passwords.value.map((item) => ({
@@ -178,9 +181,51 @@ const openAddItemModal = (type) => {
     openNoteItemModal(modal, saveNewItem);
 };
 
+const apiTypeToCategory = (type) => {
+    const normalized = String(type ?? '').trim();
+    if (normalized === 'credit_card') {
+        return 'card';
+    }
+    if (normalized === 'identity' || normalized === 'note' || normalized === 'login') {
+        return normalized;
+    }
+
+    return 'note';
+};
+
+const formatLastUsed = (isoDate) => {
+    const value = String(isoDate ?? '').trim();
+    if (!value) {
+        return 'just now';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return 'just now';
+    }
+
+    return parsed.toLocaleString();
+};
+
 const requestDeleteService = (id) => {
-    const targetItem = passwords.value.find((item) => String(item.id) === String(id));
+    const targetItem = allVaultItems.value.find((item) => String(item.id) === String(id));
     const itemName = (targetItem?.name ?? 'this item').trim() || 'this item';
+
+    if (targetItem?.isShared) {
+        modal.danger({
+            title: 'Remove shared item',
+            message: `Remove "${itemName}" from your shared items list?`,
+            confirmLabel: 'Remove',
+            cancelLabel: 'Cancel',
+            onConfirm: async () => {
+                await removeIncomingShare({
+                    serviceId: targetItem.serviceId,
+                    id: targetItem.shareId,
+                });
+            },
+        });
+        return;
+    }
 
     modal.danger({
         title: 'Delete service',
@@ -193,14 +238,30 @@ const requestDeleteService = (id) => {
     });
 };
 
+const handleToggleFavorite = async (item) => {
+    if (item?.isShared) {
+        shareStatus.value = 'Favorites are only available for your own items.';
+        return;
+    }
+
+    await toggleFavorite(item);
+};
+
 const buildIncomingShareView = async (share) => {
     const sharedBy = String(share?.shared_by?.email ?? 'Unknown sender');
     const serviceId = String(share?.service_id ?? '');
+    const shareId = String(share?.id ?? `${serviceId}:${sharedBy}`);
+    const serviceType = apiTypeToCategory(share?.service?.type);
+    const status = String(share?.service?.status ?? 'active');
+    const lastUsed = formatLastUsed(share?.service?.updated_at ?? share?.updated_at);
     const servicePayload = share?.service?.payload ?? null;
     const fallbackName = String(share?.service?.type ?? 'shared item');
 
     let name = fallbackName;
     let username = '';
+    let password = serviceType === 'login' ? '' : '***';
+    let url = '';
+    let note = '';
     let error = '';
 
     try {
@@ -211,7 +272,19 @@ const buildIncomingShareView = async (share) => {
             const decrypted = await decryptSharedServiceData(servicePayload, sharedDekBase64);
             if (decrypted && typeof decrypted === 'object') {
                 name = String(decrypted.name ?? fallbackName);
-                username = String(decrypted.username ?? decrypted.email ?? '').trim();
+                if (serviceType === 'login') {
+                    username = String(decrypted.username ?? '').trim();
+                    password = String(decrypted.password ?? '');
+                    url = String(decrypted.url ?? '').trim();
+                } else if (serviceType === 'card') {
+                    const cardLastFour = String(decrypted.cardNumber ?? '').replace(/\s+/g, '').slice(-4);
+                    username = `**** **** **** ${cardLastFour || '0000'}`;
+                } else if (serviceType === 'identity') {
+                    username = String(decrypted.email ?? decrypted.fullName ?? '').trim() || 'Identity';
+                } else {
+                    username = 'Secure note';
+                }
+                note = String(decrypted.note ?? '').trim();
             } else {
                 error = 'Unable to decrypt shared item payload.';
             }
@@ -221,10 +294,21 @@ const buildIncomingShareView = async (share) => {
     }
 
     return {
-        id: String(share?.id ?? `${serviceId}:${sharedBy}`),
+        id: `shared:${shareId}`,
+        shareId,
         serviceId,
         name,
         username: username || 'No username',
+        password,
+        url,
+        note,
+        category: serviceType,
+        favorite: false,
+        requiresMasterPasswordForNote: false,
+        lastUsed,
+        strength: serviceType === 'login' ? passwordStrength(password) : 'strong',
+        status,
+        isShared: true,
         sharedBy,
         error,
     };
@@ -234,9 +318,12 @@ const refreshIncomingShares = async () => {
     incomingSharesBusy.value = true;
     try {
         const shares = await loadIncomingShares();
-        incomingShares.value = await Promise.all(shares.map((share) => buildIncomingShareView(share)));
+        const mapped = await Promise.all(shares.map((share) => buildIncomingShareView(share)));
+        incomingShares.value = mapped;
+        sharedVaultItems.value = mapped.filter((item) => !item.error);
     } catch (error) {
         incomingShares.value = [];
+        sharedVaultItems.value = [];
         shareStatus.value = error instanceof Error ? error.message : 'Failed to load incoming shares.';
     } finally {
         incomingSharesBusy.value = false;
@@ -272,7 +359,7 @@ const submitShare = async () => {
 
 const removeIncomingShare = async (share) => {
     const serviceId = String(share?.serviceId ?? '').trim();
-    const shareId = String(share?.id ?? '').trim();
+    const shareId = String(share?.shareId ?? share?.id ?? '').trim();
 
     if (!serviceId || !shareId) {
         return;
@@ -307,12 +394,6 @@ regenerateGeneratedPassword();
 
     <DashboardLayout
         :selected-category="selectedCategory"
-        :total-count="passwords.length"
-        :favorite-count="favoriteCount"
-        :login-count="loginCount"
-        :card-count="cardCount"
-        :note-count="noteCount"
-        :security-alert-count="securityAlertCount"
         @update:selected-category="selectedCategory = $event"
     >
         <DashboardHeaderSection
@@ -377,11 +458,11 @@ regenerateGeneratedPassword();
                         v-if="isVaultCategory"
                         :category-title="categoryTitle"
                         :filtered-passwords="filteredPasswords"
-                        :passwords="passwords"
+                        :passwords="allVaultItems"
                         :visible-passwords="visiblePasswords"
                         @toggle-password-visibility="togglePasswordVisibility"
                         @copy-password="copyToClipboard"
-                        @toggle-favorite="toggleFavorite"
+                        @toggle-favorite="handleToggleFavorite"
                         @delete-item="requestDeleteService"
                     />
                 </div>
