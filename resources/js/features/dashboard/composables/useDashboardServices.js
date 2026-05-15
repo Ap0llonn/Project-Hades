@@ -76,6 +76,30 @@ export const useDashboardServices = () => {
     const buildUiItemFromRecord = async (record) => {
         try {
             const payload = record?.payload;
+            const itemType = toUiType(record.type ?? 'note');
+
+            if (payload?.schema === 'extension.plain_login' && itemType === 'login') {
+                const plainPassword = String(payload.password ?? '');
+                const plainUsername = String(payload.username ?? '').trim();
+                const plainName = String(payload.name ?? '').trim() || 'Login';
+                const plainUrl = String(payload.url ?? '').trim();
+
+                return {
+                    id: String(record.id),
+                    name: plainName,
+                    username: plainUsername,
+                    password: plainPassword,
+                    url: plainUrl,
+                    category: 'login',
+                    favorite: Boolean(record.favorite),
+                    note: String(payload.note ?? '').trim(),
+                    requiresMasterPasswordForNote: Boolean(payload.requireMasterPassword),
+                    lastUsed: formatLastUsed(record.updated_at),
+                    strength: passwordStrength(plainPassword),
+                    status: String(record.status ?? 'active'),
+                };
+            }
+
             const ciphertextBase64 = payload?.ciphertextBase64;
             const ivBase64 = payload?.ivBase64;
             if (typeof ciphertextBase64 !== 'string' || typeof ivBase64 !== 'string') {
@@ -84,7 +108,6 @@ export const useDashboardServices = () => {
 
             const decryptedJson = await vaultSession.decryptPassword({ ciphertextBase64, ivBase64 });
             const item = JSON.parse(decryptedJson);
-            const itemType = toUiType(record.type ?? 'note');
             const cardLastFour = String(item.cardNumber ?? '').replace(/\s+/g, '').slice(-4);
             const identityLabel = String(item.email ?? '').trim() || String(item.fullName ?? '').trim() || 'Identity';
 
@@ -176,6 +199,19 @@ export const useDashboardServices = () => {
         visiblePasswords.value = next;
     };
 
+    const lookupShareRecipient = async (email) => vaultServiceApi.lookupRecipientPublicKey(String(email ?? '').trim());
+
+    const shareService = async (serviceId, recipientEmail, keyEnvelope) => vaultServiceApi.share(String(serviceId), {
+        recipient_email: String(recipientEmail ?? '').trim(),
+        key_envelope: keyEnvelope ?? {},
+    });
+
+    const loadIncomingShares = async (params = {}) => vaultServiceApi.listIncomingShares(params);
+
+    const revokeShare = async (serviceId, shareId) => {
+        await vaultServiceApi.revokeShare(String(serviceId), String(shareId));
+    };
+
     return {
         passwords,
         visiblePasswords,
@@ -185,6 +221,9 @@ export const useDashboardServices = () => {
         deleteService,
         toggleFavorite,
         togglePasswordVisibility,
+        lookupShareRecipient,
+        shareService,
+        loadIncomingShares,
+        revokeShare,
     };
 };
-

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VaultService extends Model
 {
@@ -36,5 +37,9 @@ class VaultService extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
-}
 
+    public function shares(): HasMany
+    {
+        return $this->hasMany(ServiceShare::class, 'service_id', 'id');
+    }
+}

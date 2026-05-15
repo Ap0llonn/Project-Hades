@@ -1,4 +1,5 @@
 <script setup>
+import { computed, ref } from 'vue';
 import {
     AlertCircle,
     Clock,
@@ -14,7 +15,7 @@ import {
     Trash2,
 } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     categoryTitle: {
         type: String,
         required: true,
@@ -39,17 +40,69 @@ const emit = defineEmits([
     'toggle-favorite',
     'delete-item',
 ]);
+
+const unavailableWebsiteLogoIds = ref(new Set());
+
+const extractHostname = (urlValue) => {
+    if (typeof urlValue !== 'string') {
+        return null;
+    }
+
+    const value = urlValue.trim();
+    if (!value) {
+        return null;
+    }
+
+    const normalizedUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+
+    try {
+        const { hostname } = new URL(normalizedUrl);
+        return hostname || null;
+    } catch {
+        return null;
+    }
+};
+
+const loginLogoUrlByItemId = computed(() => {
+    const logoMap = {};
+
+    props.filteredPasswords.forEach((item) => {
+        if (item.category !== 'login') {
+            return;
+        }
+
+        const itemId = String(item.id);
+        if (unavailableWebsiteLogoIds.value.has(itemId)) {
+            return;
+        }
+
+        const hostname = extractHostname(item.url);
+        if (!hostname) {
+            return;
+        }
+
+        logoMap[itemId] = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
+    });
+
+    return logoMap;
+});
+
+const markWebsiteLogoAsUnavailable = (itemId) => {
+    const next = new Set(unavailableWebsiteLogoIds.value);
+    next.add(String(itemId));
+    unavailableWebsiteLogoIds.value = next;
+};
 </script>
 
 <template>
     <section class="overflow-hidden rounded-2xl border border-outline-variant bg-surface">
         <div class="border-b border-outline-variant p-6">
-            <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ categoryTitle }}</h2>
-            <p class="mt-1 text-sm text-on-surface-variant">{{ filteredPasswords.length }} items</p>
+            <h2 class="text-xl font-semibold tracking-tight text-on-surface">{{ props.categoryTitle }}</h2>
+            <p class="mt-1 text-sm text-on-surface-variant">{{ props.filteredPasswords.length }} items</p>
         </div>
 
         <div class="divide-y divide-outline-variant">
-            <div v-if="filteredPasswords.length === 0" class="p-12 text-center">
+            <div v-if="props.filteredPasswords.length === 0" class="p-12 text-center">
                 <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-low">
                     <Search class="h-8 w-8 text-on-surface-variant" />
                 </div>
@@ -57,11 +110,19 @@ const emit = defineEmits([
                 <p class="text-sm text-on-surface-variant">Try adjusting your search or filters</p>
             </div>
 
-            <div v-for="pwd in filteredPasswords" :key="pwd.id" class="group p-6 transition-colors hover:bg-surface-container-low">
+            <div v-for="pwd in props.filteredPasswords" :key="pwd.id" class="group p-6 transition-colors hover:bg-surface-container-low">
                 <div class="flex items-center justify-between gap-4">
                     <div class="flex min-w-0 flex-1 items-center gap-4">
                         <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-secondary-container to-tertiary-fixed">
-                            <Key v-if="pwd.category === 'login'" class="h-6 w-6 text-blue-600" />
+                            <img
+                                v-if="pwd.category === 'login' && loginLogoUrlByItemId[String(pwd.id)]"
+                                :src="loginLogoUrlByItemId[String(pwd.id)]"
+                                :alt="`${pwd.name} logo`"
+                                class="h-6 w-6 rounded-sm object-contain"
+                                loading="lazy"
+                                @error="markWebsiteLogoAsUnavailable(pwd.id)"
+                            >
+                            <Key v-else-if="pwd.category === 'login'" class="h-6 w-6 text-blue-600" />
                             <CreditCard v-else-if="pwd.category === 'card'" class="h-6 w-6 text-blue-600" />
                             <IdCard v-else-if="pwd.category === 'identity'" class="h-6 w-6 text-blue-600" />
                             <FileText v-else class="h-6 w-6 text-blue-600" />
@@ -92,10 +153,10 @@ const emit = defineEmits([
                     <div class="flex items-center gap-2 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                         <button
                             class="rounded-lg p-2 transition-colors hover:bg-surface-container"
-                            :title="visiblePasswords.has(pwd.id) ? 'Hide password' : 'Show password'"
+                            :title="props.visiblePasswords.has(pwd.id) ? 'Hide password' : 'Show password'"
                             @click="emit('toggle-password-visibility', pwd.id)"
                         >
-                            <EyeOff v-if="visiblePasswords.has(pwd.id)" class="h-5 w-5 text-on-surface-variant" />
+                            <EyeOff v-if="props.visiblePasswords.has(pwd.id)" class="h-5 w-5 text-on-surface-variant" />
                             <Eye v-else class="h-5 w-5 text-on-surface-variant" />
                         </button>
                         <button
@@ -134,7 +195,7 @@ const emit = defineEmits([
                     leave-to-class="max-h-0 opacity-0"
                 >
                     <div
-                        v-if="visiblePasswords.has(pwd.id)"
+                        v-if="props.visiblePasswords.has(pwd.id)"
                         class="mt-4 ml-16 overflow-hidden rounded-lg bg-surface-container-low p-4"
                     >
                         <p class="mb-1 text-sm font-medium text-on-surface-variant">Password</p>
@@ -150,7 +211,7 @@ const emit = defineEmits([
             <h2 class="text-xl font-semibold tracking-tight text-on-surface">Recent Activity</h2>
         </div>
         <div class="space-y-4 p-6">
-            <div v-for="pwd in passwords.slice(0, 5)" :key="`recent-${pwd.id}`" class="flex items-center gap-4">
+            <div v-for="pwd in props.passwords.slice(0, 5)" :key="`recent-${pwd.id}`" class="flex items-center gap-4">
                 <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary-container">
                     <Clock class="h-5 w-5 text-blue-600" />
                 </div>
@@ -162,4 +223,3 @@ const emit = defineEmits([
         </div>
     </section>
 </template>
-

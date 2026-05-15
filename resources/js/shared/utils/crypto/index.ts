@@ -9,3 +9,4 @@ export type {
     ArgonTypeName,
 } from './cryptoCore';
 export type { DerivedClientKey, GeneratedClientKeyPair } from './CryptoGenerator';
+export type { AsymmetricEncryptedPayload } from './CryptoEncryptor';

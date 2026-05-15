@@ -1,0 +1,38 @@
+{
+  "name": "extension-pm",
+  "displayName": "Extension PM",
+  "version": "0.0.1",
+  "description": "Chrome extension skeleton built with the Plasmo framework.",
+  "author": "OpenAI Codex",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "package": "plasmo package"
+  },
+  "dependencies": {
+    "plasmo": "^0.90.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.277",
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "typescript": "^5.4.5"
+  },
+  "manifest": {
+    "name": "Extension PM",
+    "description": "Starter Chrome extension powered by Plasmo.",
+    "permissions": [
+      "storage",
+      "identity",
+      "tabs",
+      "activeTab"
+    ],
+    "host_permissions": [
+      "http://*/*",
+      "https://*/*"
+    ]
+  }
+}

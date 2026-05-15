@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'vault.domain' => \App\Http\Middleware\EnsureVaultDomain::class,
             'marketing.domain' => \App\Http\Middleware\EnsureMarketingDomain::class,
             'pending.mfa' => \App\Http\Middleware\EnsurePendingMfa::class,
+            'extension.token' => \App\Http\Middleware\AuthenticateExtensionToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

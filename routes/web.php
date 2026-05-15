@@ -42,5 +42,6 @@ Route::domain('vault.vaultguardian.test')
 
         Route::get('/settings', SettingsController::class)->name('settings')->middleware('auth');
         require base_path('routes/Dashboard/service.php');
+        require base_path('routes/Extension/auth.php');
         require base_path('routes/Auth/mfa.php');
     });

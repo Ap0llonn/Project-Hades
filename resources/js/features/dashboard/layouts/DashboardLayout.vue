@@ -90,7 +90,7 @@ const selectCategory = (category) => {
                     <p class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Features</p>
                 </div>
 
-                <button
+                <button/>
                     type="button"
                     class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
                     :class="selectedCategory === 'security-center' ? 'bg-secondary-container text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'"

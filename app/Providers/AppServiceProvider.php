@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Features\Dashboard\Service\Share\Shared\EloquentRecipientPublicKeyDirectory;
+use App\Features\Dashboard\Service\Share\Shared\RecipientPublicKeyDirectory;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(RecipientPublicKeyDirectory::class, EloquentRecipientPublicKeyDirectory::class);
     }
 
     /**
@@ -69,6 +71,18 @@ class AppServiceProvider extends ServiceProvider
                         'code' => ['Too many setup code requests. Please wait a minute and try again.'],
                     ]);
                 });
+        });
+
+        RateLimiter::for('extension-auth-code', function (Request $request) {
+            $user = $request->user();
+            $userId = $user ? (string) $user->id : 'guest';
+
+            return Limit::perMinute(12)->by($userId . '|' . $request->ip());
+        });
+
+        RateLimiter::for('extension-auth-token', function (Request $request) {
+            $key = (string) ($request->input('code') ?? $request->input('refresh_token') ?? 'no-token');
+            return Limit::perMinute(40)->by($request->ip() . '|' . sha1($key));
         });
     }
 }

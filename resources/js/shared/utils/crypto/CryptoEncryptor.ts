@@ -37,6 +37,12 @@ export interface WrappedMasterKeyPayload extends EncryptedPayload {
     argonType: ArgonTypeName;
 }
 
+export interface AsymmetricEncryptedPayload {
+    ciphertextBase64: string;
+    algorithm: 'libsodium.crypto_box_seal' | 'libsodium.crypto_box_easy';
+    ivBase64?: string;
+}
+
 export class CryptoEncryptor {
 
     /**
@@ -223,6 +229,32 @@ export class CryptoEncryptor {
         return {
             ciphertextBase64: toBase64(ciphertext),
             ivBase64: toBase64(nonceBytes),
+        };
+    }
+
+    static async encryptWithPublicKey(
+        plainText: string,
+        recipientPublicKey: BinarySource,
+    ): Promise<AsymmetricEncryptedPayload> {
+        if (typeof plainText !== 'string') {
+            throw new Error('plainText must be a string.');
+        }
+
+        const sodium = await getSodium();
+        const publicKeyBytes = normalizeBytes(recipientPublicKey, 'recipientPublicKey');
+
+        if (publicKeyBytes.length !== sodium.crypto_box_PUBLICKEYBYTES) {
+            throw new Error(`recipientPublicKey must be ${sodium.crypto_box_PUBLICKEYBYTES} bytes.`);
+        }
+
+        const ciphertext = sodium.crypto_box_seal(
+            utf8ToBytes(plainText),
+            publicKeyBytes,
+        );
+
+        return {
+            ciphertextBase64: toBase64(ciphertext),
+            algorithm: 'libsodium.crypto_box_seal',
         };
     }
 }
