@@ -10,7 +10,7 @@ class EnsureMarketingDomain
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->getHost() !== 'vaultguardian.test') {
+        if ($request->getHost() !== 'vaultguardian.ca') {
             abort(404);
         }
 
