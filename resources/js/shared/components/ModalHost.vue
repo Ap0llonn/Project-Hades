@@ -59,6 +59,45 @@ const getFormSections = (fields: ModalField[]): Array<{ title: string; fields: M
     return groups;
 };
 
+const getModalWidthClasses = (size: ModalSize): string => {
+    if (size === 'sm') {
+        return 'max-w-md';
+    }
+    if (size === 'lg') {
+        return 'max-w-2xl';
+    }
+
+    return 'max-w-xl';
+};
+
+const getModalHeightClasses = (size: ModalSize): string => {
+    if (size === 'lg') {
+        return 'h-[85vh]';
+    }
+
+    return '';
+};
+
+const getFormSections = (fields: ModalField[]): Array<{ title: string; fields: ModalField[] }> => {
+    const groups: Array<{ title: string; fields: ModalField[] }> = [];
+
+    fields.forEach((field) => {
+        const title = field.section ?? '';
+        const existingGroup = groups.find((group) => group.title === title);
+        if (existingGroup) {
+            existingGroup.fields.push(field);
+            return;
+        }
+
+        groups.push({
+            title,
+            fields: [field],
+        });
+    });
+
+    return groups;
+};
+
 const onTextInput = (event: Event, modalId: string, fieldName: string): void => {
     const target = event.target as HTMLInputElement | null;
     if (!target) {
