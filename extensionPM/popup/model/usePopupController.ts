@@ -174,7 +174,8 @@ export const usePopupController = () => {
   const view = useMemo(() => {
     const isAuthenticated = !!session?.isAuthenticated && !session?.isLocked
     const displayName = session?.user?.name?.trim() || session?.user?.email?.trim() || "Vault"
-    const initials = displayName.slice(0, 1).toUpperCase()
+    const userEmail = session?.user?.email?.trim() || "authenticated@vault"
+    const emailInitial = userEmail.slice(0, 1).toUpperCase()
     const canSave = !!draft.name.trim() && !!draft.username.trim() && !!draft.password.trim()
     const matchesSearch =
       !search.trim() ||
@@ -185,7 +186,8 @@ export const usePopupController = () => {
     return {
       isAuthenticated,
       displayName,
-      initials,
+      userEmail,
+      emailInitial,
       canSave,
       matchesSearch
     }
