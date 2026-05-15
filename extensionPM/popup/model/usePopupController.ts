@@ -96,8 +96,9 @@ export const usePopupController = () => {
       }
 
       const nextSession = await sendBackgroundMessage<SessionState>({
-        type: "auth:start",
-        forcePrompt: true
+        type: "auth:direct-login",
+        email: loginDraft.email.trim(),
+        password: loginDraft.password,
       })
       setSession(nextSession)
       await verifySession()

@@ -77,6 +77,7 @@ export type BackgroundRequest =
   | { type: "session:verify" }
   | { type: "session:lock" }
   | { type: "auth:start"; forcePrompt?: boolean }
+  | { type: "auth:direct-login"; email: string; password: string }
   | { type: "auth:logout" }
   | { type: "page:get-active-tab" }
   | { type: "page:extract-login-draft" }

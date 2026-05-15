@@ -416,6 +416,13 @@ export const requireSensitiveAction = async () => {
   await touchActivity()
 }
 
+export const directLogin = async (email: string, password: string) => {
+  const endpoint = await getTokenEndpoint("/api/extension/auth/login")
+  const tokens = await postJson<TokenResponse>(endpoint, { email, password })
+  await persistTokens(tokens, { interactiveAuth: true })
+  return getSessionState()
+}
+
 export const logout = async () => {
   if (accessTokenCache?.token) {
     await revokeSession(accessTokenCache.token)

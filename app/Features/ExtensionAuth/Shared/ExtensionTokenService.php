@@ -135,6 +135,24 @@ final class ExtensionTokenService
     }
 
     /**
+     * @return array{access_token: string, refresh_token: string, token_type: string, expires_in: int, refresh_expires_in: int, user: array{id: string, email: string, first_name: string|null, last_name: string|null}}
+     */
+    public function issueTokenPair(User $user, Request $request): array
+    {
+        $now = Carbon::now();
+        $tokens = $this->issueTokenPairForUser((string) $user->id, $request, $now);
+
+        $tokens['user'] = [
+            'id'         => (string) $user->id,
+            'email'      => (string) $user->email,
+            'first_name' => $user->first_name,
+            'last_name'  => $user->last_name,
+        ];
+
+        return $tokens;
+    }
+
+    /**
      * @return array{access_token: string, refresh_token: string, token_type: string, expires_in: int, refresh_expires_in: int}
      */
     private function issueTokenPairForUser(string $userId, Request $request, Carbon $now): array

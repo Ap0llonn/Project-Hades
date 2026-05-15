@@ -1,5 +1,9 @@
 <script setup>
-import {KeyRound} from 'lucide-vue-next';
+import { ref } from 'vue';
+import { KeyRound } from 'lucide-vue-next';
+import ChangePasswordModal from './ChangePasswordModal.vue';
+
+const showModal = ref(false);
 </script>
 
 <template>
@@ -16,9 +20,14 @@ import {KeyRound} from 'lucide-vue-next';
         <button
             type="button"
             class="text-lg font-medium text-primary transition-colors hover:text-primary-container"
+            @click="showModal = true"
         >
             Change Password
         </button>
     </div>
-</template>
 
+    <ChangePasswordModal
+        v-if="showModal"
+        @close="showModal = false"
+    />
+</template>
