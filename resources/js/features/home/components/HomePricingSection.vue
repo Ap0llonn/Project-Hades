@@ -48,17 +48,13 @@ const plans = [
 </script>
 
 <template>
-    <section id="pricing" class="bg-surface-container-low px-6 py-24">
-        <div class="mx-auto w-full max-w-7xl">
-            <div class="mb-14 text-center">
-                <p class="mb-4 inline-flex items-center gap-2 rounded-full bg-secondary-container px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-on-secondary-container">
-                    <Sparkles class="h-4 w-4" />
-                    <span>Pricing</span>
-                </p>
-                <h2 class="mb-4 text-4xl font-bold text-on-surface">
+    <section id="pricing" class="mx-auto w-full max-w-7xl px-6 py-24">
+        <div>
+            <div class="mb-14 text-center" data-aos="fade-up">
+                <h2 class="mb-4 text-4xl font-semibold tracking-tight text-gray-900 md:text-5xl">
                     Simple plans, serious security
                 </h2>
-                <p class="mx-auto max-w-2xl text-lg text-on-surface-variant">
+                <p class="mx-auto max-w-2xl text-lg text-gray-600">
                     Start free, scale when needed, and keep the same security foundation at every tier.
                 </p>
             </div>
@@ -67,16 +63,24 @@ const plans = [
                 <article
                     v-for="plan in plans"
                     :key="plan.name"
-                    class="rounded-[2rem] border p-8 transition-all"
+                    class="relative overflow-hidden rounded-2xl border p-8 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                     :class="plan.featured
-                        ? 'border-primary bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-xl'
-                        : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface [box-shadow:0_40px_60px_-15px_rgb(25_28_30_/_0.06)]'"
+                        ? 'border-blue-300 bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-xl shadow-blue-600/20'
+                        : 'border-gray-200 bg-white text-gray-900'"
+                    data-aos="fade-up"
                 >
+                    <div
+                        v-if="plan.featured"
+                        class="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
+                    >
+                        Most Popular
+                    </div>
+
                     <div class="mb-8">
-                        <h3 class="mb-3 text-2xl font-bold">{{ plan.name }}</h3>
+                        <h3 class="mb-3 text-2xl font-bold tracking-tight">{{ plan.name }}</h3>
                         <p
                             class="mb-6 text-sm leading-relaxed"
-                            :class="plan.featured ? 'text-white/90' : 'text-on-surface-variant'"
+                            :class="plan.featured ? 'text-white/90' : 'text-gray-600'"
                         >
                             {{ plan.summary }}
                         </p>
@@ -85,7 +89,7 @@ const plans = [
                             <span class="text-4xl font-black tracking-tight">{{ plan.price }}</span>
                             <span
                                 class="pb-1 text-sm font-semibold"
-                                :class="plan.featured ? 'text-white/80' : 'text-on-surface-variant'"
+                                :class="plan.featured ? 'text-white/80' : 'text-gray-600'"
                             >
                                 {{ plan.cadence }}
                             </span>
@@ -100,11 +104,11 @@ const plans = [
                         >
                             <span
                                 class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full"
-                                :class="plan.featured ? 'bg-white/20' : 'bg-primary/10'"
+                                :class="plan.featured ? 'bg-white/20' : 'bg-blue-100'"
                             >
                                 <Check
                                     class="h-3.5 w-3.5"
-                                    :class="plan.featured ? 'text-white' : 'text-primary'"
+                                    :class="plan.featured ? 'text-white' : 'text-blue-600'"
                                 />
                             </span>
                             <span class="text-sm font-medium">{{ feature }}</span>
@@ -114,8 +118,8 @@ const plans = [
                     <button
                         class="w-full rounded-2xl px-5 py-3 text-sm font-bold transition-all active:scale-95"
                         :class="plan.featured
-                            ? 'bg-white text-primary hover:bg-surface-container'
-                            : 'bg-primary text-on-primary hover:bg-primary-container'"
+                            ? 'bg-white text-blue-700 hover:bg-blue-50'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'"
                     >
                         {{ plan.cta }}
                     </button>

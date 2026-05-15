@@ -206,14 +206,14 @@ function startOAuth(provider) {
                         {{ loginRequest.processing ? 'Signing In...' : 'Sign In' }}
                     </button>
 
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2"   data-aos="fade-up"
+                         data-aos-delay="500">
                         <button
                             type="button"
                             :disabled="!passkeySupported || passkeyProcessing"
                             class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
                             style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
-                            data-aos="fade-up"
-                            data-aos-delay="500"
+
                             @click="handlePasskeyAuthentication"
                         >
                             <Shield class="h-5 w-5" />
@@ -224,6 +224,7 @@ function startOAuth(provider) {
                             type="button"
                             class="flex cursor-pointer w-full items-center justify-center gap-2 rounded-xl border border-gray-300 py-4 text-gray-700 transition-all hover:bg-gray-50"
                             style="font-family: 'DM Sans', sans-serif; font-weight: 600;"
+                            data-aos="fade-up"
                             @click="startOAuth('google')"
                         >
                             <Chrome class="h-5 w-5" />
