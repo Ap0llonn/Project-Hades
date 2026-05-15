@@ -1,73 +1,16 @@
 <script setup>
+import { ref, watch } from 'vue';
+import { Check } from 'lucide-vue-next';
+
 defineProps({
-    isSecurityCenter: {
-        type: Boolean,
-        required: true,
-    },
-    isPasswordGenerator: {
-        type: Boolean,
-        required: true,
-    },
-    isImportExport: {
-        type: Boolean,
-        required: true,
-    },
-    isPasswordSharing: {
-        type: Boolean,
-        required: true,
-    },
-    categoryTitle: {
-        type: String,
-        required: true,
-    },
-    weakPasswords: {
-        type: Number,
-        required: true,
-    },
-    reusedPasswords: {
-        type: Number,
-        required: true,
-    },
-    breachedPasswords: {
-        type: Number,
-        required: true,
-    },
-    generatorLength: {
-        type: Number,
-        required: true,
-    },
-    generatedPassword: {
-        type: String,
-        required: true,
-    },
-    shareableItems: {
-        type: Array,
-        default: () => [],
-    },
-    selectedShareServiceId: {
-        type: String,
-        default: '',
-    },
-    shareRecipientEmail: {
-        type: String,
-        default: '',
-    },
-    shareBusy: {
-        type: Boolean,
-        default: false,
-    },
-    shareStatus: {
-        type: String,
-        default: '',
-    },
-    incomingShares: {
-        type: Array,
-        default: () => [],
-    },
-    incomingSharesBusy: {
-        type: Boolean,
-        default: false,
-    },
+    isSecurityCenter: { type: Boolean, required: true },
+    isPasswordGenerator: { type: Boolean, required: true },
+    isImportExport: { type: Boolean, required: true },
+    isPasswordSharing: { type: Boolean, required: true },
+    categoryTitle: { type: String, required: true },
+    weakPasswords: { type: Number, required: true },
+    reusedPasswords: { type: Number, required: true },
+    breachedPasswords: { type: Number, required: true },
 });
 
 const emit = defineEmits([
@@ -81,14 +24,19 @@ const emit = defineEmits([
     'revoke-incoming-share',
 ]);
 
-const onGeneratorLengthInput = (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) {
-        return;
-    }
+const generate = () => {
+    const charset = buildCharset();
+    const array = new Uint32Array(length.value);
+    crypto.getRandomValues(array);
+    generatedPassword.value = Array.from(array)
+        .map((n) => charset[n % charset.length])
+        .join('');
+};
 
-    emit('update:generatorLength', Number(target.value));
-    emit('regenerate-password');
+const copyPassword = async () => {
+    try {
+        await navigator.clipboard.writeText(generatedPassword.value);
+    } catch { /* silent */ }
 };
 
 const onServiceSelect = (event) => {
@@ -108,6 +56,10 @@ const onRecipientInput = (event) => {
 
     emit('update:shareRecipientEmail', target.value);
 };
+
+watch([length, useUpper, useLower, useNumbers, useSpecial], generate);
+
+generate();
 </script>
 
 <template>
@@ -163,15 +115,40 @@ const onRecipientInput = (event) => {
                     class="w-full accent-primary"
                     @input="onGeneratorLengthInput"
                 >
+
+                <!-- Options -->
+                <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <button
+                        v-for="opt in [
+                            { label: 'Uppercase', model: useUpper },
+                            { label: 'Lowercase', model: useLower },
+                            { label: 'Numbers',   model: useNumbers },
+                            { label: 'Special',   model: useSpecial },
+                        ]"
+                        :key="opt.label"
+                        type="button"
+                        class="flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors"
+                        :class="opt.model.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-outline-variant bg-surface text-on-surface-variant hover:bg-surface-container'"
+                        @click="opt.model.value = !opt.model.value"
+                    >
+                        <Check v-if="opt.model.value" class="h-3 w-3 shrink-0" />
+                        {{ opt.label }}
+                    </button>
+                </div>
+
+                <!-- Result -->
                 <div class="mt-4 rounded-lg border border-outline-variant bg-surface px-4 py-3">
                     <p class="text-xs uppercase tracking-wider text-on-surface-variant">Generated Password</p>
-                    <p class="mt-2 break-all font-mono text-on-surface">{{ generatedPassword }}</p>
+                    <p class="mt-2 break-all font-mono text-sm text-on-surface">{{ generatedPassword }}</p>
                 </div>
             </div>
+
             <button
                 type="button"
                 class="rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
-                @click="emit('copy-generated-password')"
+                @click="copyPassword"
             >
                 Copy Password
             </button>
@@ -315,3 +292,4 @@ const onRecipientInput = (event) => {
         </div>
     </section>
 </template>
+

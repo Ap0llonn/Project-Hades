@@ -13,7 +13,6 @@ import { openCardItemModal } from '../components/item-modals/cardItemModalForm';
 import { openIdentityItemModal } from '../components/item-modals/identityItemModalForm';
 import { openLoginItemModal } from '../components/item-modals/loginItemModalForm';
 import { openNoteItemModal } from '../components/item-modals/noteItemModalForm';
-import { openServiceItemActionsModal } from '../components/item-modals/serviceItemActionsModalForm';
 import { useModal } from '../../../shared/modal';
 
 const searchQuery = ref('');
@@ -54,22 +53,6 @@ const {
 } = useDashboardServices();
 
 const vaultCategories = ['all', 'favorites', 'login', 'card', 'note', 'identity'];
-
-const generatePassword = (length) => {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{};:,.?/|';
-    let output = '';
-
-    for (let index = 0; index < length; index += 1) {
-        const randomIndex = Math.floor(Math.random() * charset.length);
-        output += charset[randomIndex];
-    }
-
-    return output;
-};
-
-const regenerateGeneratedPassword = () => {
-    generatedPassword.value = generatePassword(generatorLength.value);
-};
 
 const copyToClipboard = async (text) => {
     try {
@@ -419,8 +402,6 @@ onMounted(() => {
             console.error('Unable to load encrypted services.', error);
         });
 });
-
-regenerateGeneratedPassword();
 </script>
 
 <template>
