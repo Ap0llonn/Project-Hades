@@ -21,8 +21,6 @@ const allItemsVaultFilter = ref('all-vaults');
 const allItemsTypeFilter = ref('all-items');
 const allItemsFolderFilter = ref('no-folder');
 const allItemsLifecycleFilter = ref('active');
-const generatorLength = ref(20);
-const generatedPassword = ref('');
 const modal = useModal();
 
 const {
@@ -36,22 +34,6 @@ const {
 } = useDashboardServices();
 
 const vaultCategories = ['all', 'favorites', 'login', 'card', 'note', 'identity'];
-
-const generatePassword = (length) => {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{};:,.?/|';
-    let output = '';
-
-    for (let index = 0; index < length; index += 1) {
-        const randomIndex = Math.floor(Math.random() * charset.length);
-        output += charset[randomIndex];
-    }
-
-    return output;
-};
-
-const regenerateGeneratedPassword = () => {
-    generatedPassword.value = generatePassword(generatorLength.value);
-};
 
 const copyToClipboard = async (text) => {
     try {
@@ -178,8 +160,6 @@ onMounted(() => {
         console.error('Unable to load encrypted services.', error);
     });
 });
-
-regenerateGeneratedPassword();
 </script>
 
 <template>
@@ -229,11 +209,6 @@ regenerateGeneratedPassword();
                         :weak-passwords="weakPasswords"
                         :reused-passwords="reusedPasswords"
                         :breached-passwords="breachedPasswords"
-                        :generator-length="generatorLength"
-                        :generated-password="generatedPassword"
-                        @update:generator-length="generatorLength = $event"
-                        @regenerate-password="regenerateGeneratedPassword"
-                        @copy-generated-password="copyToClipboard(generatedPassword)"
                     />
 
                     <DashboardQuickActionsSection
